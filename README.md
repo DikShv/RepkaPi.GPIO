@@ -1,4 +1,4 @@
-# OrangePi.GPIO
+# RepkaPi.GPIO
 
 This is a modified version of **RPi.GPIO** for Orange Pi Boards.
 
