@@ -106,11 +106,11 @@ int gpio_function_name(int gpio, int func, int board)
       {
         case 5 : str = 37; break;
         case 6 : // PWM1 only H3
-          if (board == 1 || board == 3 || board == 4) {
+          /*if (board == 1 || board == 3 || board == 4) {
             str = 38;
-          } else {
+          } else {*/
             str = 4;
-          }
+          /*}*/
           break;
         case 13 : str = 31; break;
         case 14 : str = 32; break;
