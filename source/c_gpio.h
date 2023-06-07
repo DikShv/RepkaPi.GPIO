@@ -44,7 +44,7 @@ SOFTWARE.
 #define PUD_DOWN          2
 #define PUD_UP            1
 
-#define RPiGPIODebug      0
+#define RPiGPIODebug      1
 
 int setup(void);
 int gpio_function(int gpio);
