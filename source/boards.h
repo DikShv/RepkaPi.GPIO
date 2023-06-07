@@ -20,11 +20,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-const int pin_to_gpio_zero[41];
-const int pin_to_gpio_zero2[41];
-const int pin_to_gpio_pc[41];
-const int pin_to_gpio_pc2[41];
-const int pin_to_gpio_prime[41];
+const int pin_to_gpio_repkapi3[41];
 
 const char* FUNCTIONS[41];
 

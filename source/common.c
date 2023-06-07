@@ -99,7 +99,7 @@ int get_gpio_number(int channel, unsigned int *gpio)
 		return 3;
 	}
 
-  if (OPiGPIODebug)
+  if (RPiGPIODebug)
     printf("GPIO = %d\n", *gpio);
 
   return 0;

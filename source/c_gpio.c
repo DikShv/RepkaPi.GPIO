@@ -35,7 +35,7 @@ uint32_t readl(uint32_t addr)
 	uint32_t mmap_base = (addr & ~MAP_MASK);
 	uint32_t mmap_seek = ((addr - mmap_base) >> 2);
 	val = *(gpio_map + mmap_seek);
-	if(OPiGPIODebug)
+	if(RPiGPIODebug)
 		printf("mmap_base = 0x%x\t mmap_seek = 0x%x\t gpio_map = 0x%x\t total = 0x%x\n",mmap_base,mmap_seek,gpio_map,(gpio_map + mmap_seek));
 
 	return val;
@@ -66,7 +66,7 @@ int setup(void)
 
 	gpio_map = (uint32_t *)mmap( (caddr_t)gpio_mem, BLOCK_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED|MAP_FIXED, mem_fd, GPIO_BASE_OPI);
 
-	if(OPiGPIODebug)
+	if(RPiGPIODebug)
 		printf("gpio_mem = 0x%x\t gpio_map = 0x%x\n",gpio_mem,gpio_map);
 
 	if ((uint32_t)gpio_map < 0)
@@ -84,12 +84,12 @@ int gpio_function(int gpio)
 	uint32_t phyaddr = SUNXI_GPIO_BASE + (bank * 36) + ((index >> 3) << 2);
 
 	regval = readl(phyaddr);
-	if (OPiGPIODebug)
+	if (RPiGPIODebug)
 		printf("read reg val: 0x%x offset:%d\n",regval,offset);
 
 	regval >>= offset;
 	regval &= 7;
-	if (OPiGPIODebug)
+	if (RPiGPIODebug)
 		printf("read reg val: 0x%x\n",regval);
 
 	return regval; // 1=input, 0=output, 4=alt0
@@ -104,19 +104,19 @@ void set_pullupdn(int gpio, int pud)//void sunxi_pullUpDnControl (int pin, int p
 	int sub_index = index - 16*sub;
 	uint32_t phyaddr = SUNXI_GPIO_BASE + (bank * 36) + 0x1C + 4*sub; // +0x1c -> pullUpDn reg
 
-	if (OPiGPIODebug)
+	if (RPiGPIODebug)
 		printf("func:%s pin:%d,bank:%d index:%d sub:%d phyaddr:0x%x\n",__func__, gpio,bank,index,sub,phyaddr);
 
 	regval = readl(phyaddr);
-	if (OPiGPIODebug)
+	if (RPiGPIODebug)
 		printf("pullUpDn reg:0x%x, pud:0x%x sub_index:%d\n", regval, pud, sub_index);
 	regval &= ~(3 << (sub_index << 1));
 	regval |= (pud << (sub_index << 1));
-	if (OPiGPIODebug)
+	if (RPiGPIODebug)
 		printf("pullUpDn val ready to set:0x%x\n", regval);
 	writel(regval, phyaddr);
 	regval = readl(phyaddr);
-	if (OPiGPIODebug)
+	if (RPiGPIODebug)
 		printf("pullUpDn reg after set:0x%x  addr:0x%x\n", regval, phyaddr);
 }
 
@@ -127,11 +127,11 @@ void setup_gpio(int gpio, int direction, int pud)//void sunxi_set_gpio_mode(int 
 	int index = gpio - (bank << 5);
 	int offset = ((index - ((index >> 3) << 3)) << 2);
 	uint32_t phyaddr = SUNXI_GPIO_BASE + (bank * 36) + ((index >> 3) << 2);
-	if (OPiGPIODebug)
+	if (RPiGPIODebug)
 		printf("func:%s pin:%d, direction:%d bank:%d index:%d phyaddr:0x%x\n",__func__, gpio , direction,bank,index,phyaddr);
 
 	regval = readl(phyaddr);
-	if (OPiGPIODebug)
+	if (RPiGPIODebug)
 		printf("read reg val: 0x%x offset:%d\n",regval,offset);
 
 	set_pullupdn(gpio, pud);
@@ -141,18 +141,18 @@ void setup_gpio(int gpio, int direction, int pud)//void sunxi_set_gpio_mode(int 
 		regval &= ~(7 << offset);
 		writel(regval, phyaddr);
 		regval = readl(phyaddr);
-		if (OPiGPIODebug)
+		if (RPiGPIODebug)
 			printf("Input mode set over reg val: 0x%x\n",regval);
 	}
 	else if(OUTPUT == direction)
 	{
 	   regval &= ~(7 << offset);
 	   regval |=  (1 << offset);
-	   if (OPiGPIODebug)
+	   if (RPiGPIODebug)
 			printf("Out mode ready set val: 0x%x\n",regval);
 	   writel(regval, phyaddr);
 	   regval = readl(phyaddr);
-	   if (OPiGPIODebug)
+	   if (RPiGPIODebug)
 			printf("Out mode set over reg val: 0x%x\n",regval);
 	}
 	else
@@ -167,18 +167,18 @@ void output_gpio(int gpio, int value) //void sunxi_digitalWrite(int pin, int val
 	int bank = gpio >> 5;
 	int index = gpio - (bank << 5);
 	uint32_t phyaddr = SUNXI_GPIO_BASE + (bank * 36) + 0x10; // +0x10 -> data reg
-	if (OPiGPIODebug)
+	if (RPiGPIODebug)
 		printf("func:%s pin:%d, value:%d bank:%d index:%d phyaddr:0x%x\n",__func__, gpio , value,bank,index,phyaddr);
 
 	regval = readl(phyaddr);
-	if (OPiGPIODebug)
+	if (RPiGPIODebug)
 		printf("before write reg val: 0x%x,index:%d\n",regval,index);
 	if(0 == value)
 	{
 		regval &= ~(1 << index);
 		writel(regval, phyaddr);
 		regval = readl(phyaddr);
-		if (OPiGPIODebug)
+		if (RPiGPIODebug)
 			printf("LOW val set over reg val: 0x%x\n",regval);
 	}
 	else
@@ -186,7 +186,7 @@ void output_gpio(int gpio, int value) //void sunxi_digitalWrite(int pin, int val
 		regval |= (1 << index);
 		writel(regval, phyaddr);
 		regval = readl(phyaddr);
-		if (OPiGPIODebug)
+		if (RPiGPIODebug)
 			printf("HIGH val set over reg val: 0x%x\n",regval);
 	}
 }
@@ -197,13 +197,13 @@ int input_gpio(int gpio)//int sunxi_digitalRead(int pin)
 	int bank = gpio >> 5;
 	int index = gpio - (bank << 5);
 	uint32_t phyaddr = SUNXI_GPIO_BASE + (bank * 36) + 0x10; // +0x10 -> data reg
-	if (OPiGPIODebug)
+	if (RPiGPIODebug)
 		printf("func:%s pin:%d,bank:%d index:%d phyaddr:0x%x\n",__func__, gpio,bank,index,phyaddr);
 
 	regval = readl(phyaddr);
 	regval = regval >> index;
 	regval &= 1;
-	if (OPiGPIODebug)
+	if (RPiGPIODebug)
 		printf("***** read reg val: 0x%x,bank:%d,index:%d,line:%d\n",regval,bank,index,__LINE__);
 
 	return regval;

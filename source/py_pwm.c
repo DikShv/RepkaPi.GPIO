@@ -47,7 +47,7 @@ static int PWM_init(PWMObject *self, PyObject *args, PyObject *kwds)
   if (get_gpio_number(channel, &(self->gpio)))
     return -1;
 
-  if (OPiGPIODebug)
+  if (RPiGPIODebug)
     printf("pwm_init channel = %d self->gpio = %d\n", channel, self->gpio);
 
   // ensure channel set as output
@@ -148,7 +148,7 @@ PWM_methods[] = {
 
 PyTypeObject PWMType = {
   PyVarObject_HEAD_INIT(NULL,0)
-  "OPi.GPIO.PWM",            // tp_name
+  "RepkaPi.GPIO.PWM",            // tp_name
   sizeof(PWMObject),         // tp_basicsize
   0,                         // tp_itemsize
   (destructor)PWM_dealloc,   // tp_dealloc

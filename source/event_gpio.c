@@ -70,7 +70,7 @@ int gpio_export(unsigned int gpio)
 		return -1;
 
 	len = snprintf(str_gpio, sizeof(str_gpio), "%d", gpio);
-	if(OPiGPIODebug)
+	if(RPiGPIODebug)
 		printf("\n /sys/class/gpio/export %d \n",gpio);
 
 	write(fd, str_gpio, len);
@@ -88,7 +88,7 @@ int gpio_unexport(unsigned int gpio)
 		return -1;
 
 	len = snprintf(str_gpio, sizeof(str_gpio), "%d", gpio);
-	if(OPiGPIODebug)
+	if(RPiGPIODebug)
 		printf("\n /sys/class/gpio/unexport %d \n",gpio);
 
 	write(fd, str_gpio, len);
@@ -102,7 +102,7 @@ int gpio_set_direction(unsigned int gpio, unsigned int in_flag)
 	char filename[34];
 
   snprintf(filename, sizeof(filename), "/sys/class/gpio/gpio%d/direction", gpio);
-	if(OPiGPIODebug)
+	if(RPiGPIODebug)
 		printf("\n /sys/class/gpio/gpio%d/direction \n", gpio);
 
 	if ((fd = open(filename, O_WRONLY)) < 0){
@@ -124,7 +124,7 @@ int gpio_set_edge(unsigned int gpio, unsigned int edge)
 	char filename[29];
 
   snprintf(filename, sizeof(filename), "/sys/class/gpio/gpio%d/edge", gpio);
-	if(OPiGPIODebug)
+	if(RPiGPIODebug)
 		printf("\n /sys/class/gpio/gpio%d/edge \n", gpio);
 
 	if ((fd = open(filename, O_WRONLY)) < 0)

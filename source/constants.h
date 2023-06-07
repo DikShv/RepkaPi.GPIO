@@ -39,11 +39,7 @@ PyObject *bcm;
 PyObject *soc;
 PyObject *version;
 PyObject *bunknown;
-PyObject *bzeroh2;
-PyObject *bzeroh5;
-PyObject *bzeroplus3;
-PyObject *bpc;
-PyObject *bpc2;
-PyObject *bprime;
+PyObject *brepkapi3;
+
 
 void define_constants(PyObject *module);

@@ -64,7 +64,7 @@ static int mmap_gpio_mem(void)
 }
 
 // python function setboard(board)
-static PyObject *py_setopi(PyObject *self, PyObject *args)
+static PyObject *py_setrpi(PyObject *self, PyObject *args)
 {
   if (!PyArg_ParseTuple(args, "i", &board_type))
     return NULL;
@@ -75,7 +75,7 @@ static PyObject *py_setopi(PyObject *self, PyObject *args)
     return NULL;
   }
 
-  if (board_type < ZERO || board_type > PRIME )
+  if (board_type < REPKAPI3)
   {
     PyErr_SetString(PyExc_ValueError, "An invalid board was passed to setboard()");
     return NULL;
@@ -84,17 +84,13 @@ static PyObject *py_setopi(PyObject *self, PyObject *args)
   //here is the 'pin_to_gpio' initialization
   switch (board_type) {
     case 1 :
-    case 2 : pin_to_gpio = &pin_to_gpio_zero; break;
-    case 3 : pin_to_gpio = &pin_to_gpio_zero2; break;
-    case 4 : pin_to_gpio = &pin_to_gpio_pc; break;
-    case 5 : pin_to_gpio = &pin_to_gpio_pc2; break;
-    case 6 : pin_to_gpio = &pin_to_gpio_prime; break;
+    case 2 : pin_to_gpio = &pin_to_gpio_repkapi3; break;
   }
 
   Py_RETURN_NONE;
 }
 
-static PyObject *py_getopi(PyObject *self, PyObject *args)
+static PyObject *py_getrpi(PyObject *self, PyObject *args)
 {
    PyObject *value;
 
@@ -662,12 +658,12 @@ static PyObject *py_wait_for_edge(PyObject *self, PyObject *args)
   Py_RETURN_NONE;
 }
 
-static const char moduledocstring[] = "GPIO functionality for OrangePi boards using Python";
+static const char moduledocstring[] = "GPIO functionality for Repka Pi boards using Python";
 
-PyMethodDef opi_gpio_methods[] = {
-  {"setboard", py_setopi, METH_VARARGS, "Set up OrangePi board model to use."},
-  {"getboard", py_getopi, METH_VARARGS, "Get OrangePi board model in use."},
-  {"setmode", py_setmode, METH_VARARGS, "Set up numbering mode to use for channels.\nBOARD - Use OrangePi board numbers\nBCM   - Use Broadcom GPIO 00..nn numbers\nSOC   - Use SUNXI port numbers"},
+PyMethodDef rpi_gpio_methods[] = {
+  {"setboard", py_setrpi, METH_VARARGS, "Set up Repka Pi board model to use."},
+  {"getboard", py_getrpi, METH_VARARGS, "Get Repka Pi board model in use."},
+  {"setmode", py_setmode, METH_VARARGS, "Set up numbering mode to use for channels.\nBOARD - Use Repka Pi board numbers\nBCM   - Use Broadcom GPIO 00..nn numbers\nSOC   - Use SUNXI port numbers"},
   {"getmode", py_getmode, METH_VARARGS, "Get numbering mode used for channel numbers.\nReturns BOARD, BCM, SOC or None"},
   {"setwarnings", py_setwarnings, METH_VARARGS, "Enable or disable warning messages"},
   {"setup", (PyCFunction)py_setup_channel, METH_VARARGS | METH_KEYWORDS, "Set up the GPIO channel, direction and (optional) pull/up down control\nchannel        - either board pin number or BCM number depending on which mode is set.\ndirection      - INPUT or OUTPUT\n[pull_up_down] - PUD_OFF (default), PUD_UP or PUD_DOWN\n[initial]      - Initial value for an output channel"},
@@ -685,12 +681,12 @@ PyMethodDef opi_gpio_methods[] = {
 };
 
 #if PY_MAJOR_VERSION > 2
-static struct PyModuleDef opigpiomodule = {
+static struct PyModuleDef rpigpiomodule = {
    PyModuleDef_HEAD_INIT,
-   "OPi.GPIO",       // name of module
+   "RepkaPi.GPIO",       // name of module
    moduledocstring,  // module documentation, may be NULL
    -1,               // size of per-interpreter state of the module, or -1 if the module keeps state in global variables.
-   opi_gpio_methods
+   rpi_gpio_methods
 };
 #endif
 
@@ -704,10 +700,10 @@ PyMODINIT_FUNC initGPIO(void)
    PyObject *module = NULL;
 
 #if PY_MAJOR_VERSION > 2
-   if ((module = PyModule_Create(&opigpiomodule)) == NULL)
+   if ((module = PyModule_Create(&rpigpiomodule)) == NULL)
       return NULL;
 #else
-   if ((module = Py_InitModule3("OPi.GPIO", opi_gpio_methods, moduledocstring)) == NULL)
+   if ((module = Py_InitModule3("RepkaPi.GPIO", rpi_gpio_methods, moduledocstring)) == NULL)
       return;
 #endif
 

@@ -70,28 +70,11 @@ void define_constants(PyObject *module)
 	bunknown = Py_BuildValue("i", BOARD_UNKNOWN);
 	PyModule_AddObject(module, "BUNKNOWN", bunknown);
 
-	bzeroh2 = Py_BuildValue("i", ZERO);
-	PyModule_AddObject(module, "ZERO", bzeroh2);
-	PyModule_AddObject(module, "R1", bzeroh2);
+	brepkapi3 = Py_BuildValue("i", REPKAPI3);
+	PyModule_AddObject(module, "REPKAPI3", brepkapi3);
 
-	bzeroh5 = Py_BuildValue("i", ZEROPLUS2H5);
-	PyModule_AddObject(module, "ZEROPLUS", bzeroh5);
-	PyModule_AddObject(module, "ZEROPLUS2H5", bzeroh5);
 
-	bzeroplus3 = Py_BuildValue("i", ZEROPLUS2H3);
-	PyModule_AddObject(module, "ZEROPLUS2H3", bzeroplus3);
-
-	bpc = Py_BuildValue("i", PCPCPLUS);
-	PyModule_AddObject(module, "PCPCPLUS", bpc);
-	PyModule_AddObject(module, "PLUS2E", bpc);
-
-	bpc2 = Py_BuildValue("i", PC2);
-	PyModule_AddObject(module, "PC2", bpc2);
-
-	bprime = Py_BuildValue("i", PRIME);
-	PyModule_AddObject(module, "PRIME", bprime);
-
-	version = Py_BuildValue("s", "0.6.3");
+	version = Py_BuildValue("s", "0.1.0");
 	PyModule_AddObject(module, "VERSION", version);
 
 	PyModule_AddObject(module, "PA", Py_BuildValue("i", 0));

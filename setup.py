@@ -36,15 +36,15 @@ classifiers = ['Development Status :: 3 - Alpha',
 with open("README.md", "r") as fh:
       long_description = fh.read()
 
-setup(name             = 'OrangePi.GPIO',
-      version          = '0.6.3',
-      author           = 'Jeremie-C',
-      description      = 'A module to control OrangePi GPIO channels',
+setup(name             = 'RepkaPi.GPIO',
+      version          = '0.1.1',
+      author           = 'screator',
+      description      = 'A module to control RepkaPi GPIO channels',
       long_description=long_description,
       long_description_content_type="text/markdown",
       license          = 'MIT',
       keywords         = 'OrangePi GPIO',
       url              = 'https://github.com/Jeremie-C/OrangePi.GPIO',
       classifiers      = classifiers,
-      packages         = ['OPi'],
-      ext_modules = [Extension('OPi.GPIO', ['source/py_gpio.c', 'source/c_gpio.c', 'source/boards.c', 'source/common.c', 'source/constants.c', 'source/soft_pwm.c', 'source/py_pwm.c', 'source/event_gpio.c'])])
+      packages         = ['RepkaPi'],
+      ext_modules = [Extension('RepkaPi.GPIO', ['source/py_gpio.c', 'source/c_gpio.c', 'source/boards.c', 'source/common.c', 'source/constants.c', 'source/soft_pwm.c', 'source/py_pwm.c', 'source/event_gpio.c'])])
