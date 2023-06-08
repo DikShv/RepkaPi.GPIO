@@ -4,8 +4,8 @@
 
     sudo apt-get update
     sudo apt-get install python-dev git
-    git clone https://github.com/Jeremie-C/OrangePi.GPIO
-    cd /OrangePi.GPIO
+    git clone https://github.com/DikShv/RepkaPi.GPIO.git
+    cd RepkaPi.GPIO
     sudo python setup.py install
 
 ## Supported Boards
