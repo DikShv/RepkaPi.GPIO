@@ -37,14 +37,14 @@ with open("README.md", "r") as fh:
       long_description = fh.read()
 
 setup(name             = 'RepkaPi.GPIO',
-      version          = '0.1.1',
-      author           = 'screator',
+      version          = '1.0',
+      author           = '@screatorpro',
       description      = 'A module to control RepkaPi GPIO channels',
       long_description=long_description,
       long_description_content_type="text/markdown",
       license          = 'MIT',
-      keywords         = 'OrangePi GPIO',
-      url              = 'https://github.com/Jeremie-C/OrangePi.GPIO',
+      keywords         = 'RepkaPi GPIO',
+      url              = 'https://github.com/DikShv/RepkaPi.GPIO',
       classifiers      = classifiers,
       packages         = ['RepkaPi'],
       ext_modules = [Extension('RepkaPi.GPIO', ['source/py_gpio.c', 'source/c_gpio.c', 'source/boards.c', 'source/common.c', 'source/constants.c', 'source/soft_pwm.c', 'source/py_pwm.c', 'source/event_gpio.c'])])
