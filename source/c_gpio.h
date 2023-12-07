@@ -21,7 +21,11 @@ SOFTWARE.
 */
 
 #define GPIO_BASE_RPI     (0x01C20000)
+#define GPIO_BASE_RPI_PL     (0x01F02000)
+
 #define SUNXI_GPIO_BASE   (0x01C20800)
+#define SUNXI_GPIO_BASE_PL   (0x01F02C00)
+
 #define SUNXI_PWM_BASE    (0x01C21400)
 
 #define PAGE_SIZE         (4*1024)
@@ -46,7 +50,7 @@ SOFTWARE.
 
 #define RPiGPIODebug      0
 
-int setup(void);
+int setup(int gpio);
 int gpio_function(int gpio);
 void setup_gpio(int gpio, int direction, int pud);
 void output_gpio(int gpio, int value);

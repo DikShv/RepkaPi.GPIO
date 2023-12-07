@@ -38,14 +38,14 @@ struct py_callback
 };
 static struct py_callback *py_callbacks = NULL;
 
-static int mmap_gpio_mem(void)
+static int mmap_gpio_mem(int gpio)
 {
   int result;
 
   if (module_setup)
     return 0;
 
-  result = setup();
+  result = setup(gpio);
   if (result == SETUP_DEVMEM_FAIL)
   {
     PyErr_SetString(PyExc_RuntimeError, "No access to /dev/mem.  Try running as root!");
@@ -57,7 +57,7 @@ static int mmap_gpio_mem(void)
     PyErr_SetString(PyExc_RuntimeError, "Mmap of GPIO registers failed");
     return 3;
   } else { // result == SETUP_OK
-    module_setup = 1;
+    module_setup = 0;
 		//printf("SETUP_OK!\n");
     return 0;
   }
@@ -205,7 +205,7 @@ static PyObject *py_setup_channel(PyObject *self, PyObject *args, PyObject *kwar
     return NULL;
   }
 
-  if (mmap_gpio_mem())
+  if (mmap_gpio_mem(gpio))
     return NULL;
 
   func = gpio_function(gpio);
@@ -302,7 +302,7 @@ static PyObject *py_gpio_function(PyObject *self, PyObject *args)
   if (get_gpio_number(channel, &gpio))
     return NULL;
 
-  if (mmap_gpio_mem())
+  if (mmap_gpio_mem(gpio))
     return NULL;
 
   f = gpio_function(gpio);
@@ -340,7 +340,7 @@ static PyObject *py_gpio_function_string(PyObject *self, PyObject *args)
   if (get_gpio_number(channel, &gpio))
     return NULL;
 
-  if (mmap_gpio_mem())
+  if (mmap_gpio_mem(gpio))
     return NULL;
 
   f = gpio_function(gpio);

@@ -114,10 +114,10 @@ int check_gpio_priv(void)
 		return 1;
 	}
 	// check mmap setup has worked
-	if (!module_setup)
+	/*if (!module_setup)
 	{
 		PyErr_SetString(PyExc_RuntimeError, "No access to /dev/mem.  Try running as root!");
 		return 2;
-	}
+	}*/
 	return 0;
 }
