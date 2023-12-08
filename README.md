@@ -6,7 +6,7 @@
     sudo apt-get install python-dev git
     git clone https://github.com/DikShv/RepkaPi.GPIO.git
     cd RepkaPi.GPIO
-    sudo python setup.py install
+    sudo python3 setup.py install
 
 ## Supported Boards
 
