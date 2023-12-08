@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import OPi.GPIO as GPIO
+import RepkaPi.GPIO as GPIO
 from time import sleep
 
-GPIO.setboard(GPIO.ZERO)
+GPIO.setboard(GPIO.REPKAPI3)
 GPIO.setmode(GPIO.BOARD)    # set up BOARD BCM numbering
 GPIO.setup(26, GPIO.OUT)    # set pin 26 as an output (LED)
 

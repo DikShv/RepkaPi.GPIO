@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import OPi.GPIO as GPIO
+import RepkaPi.GPIO as GPIO
 from time import sleep          # this lets us have a time delay
 
-GPIO.setboard(GPIO.ZERO)        # Orange Pi Zero board
+GPIO.setboard(GPIO.REPKAPI3)        # Orange Pi Zero board
 GPIO.setmode(GPIO.SOC)          # set up SOC numbering
 
 sled = GPIO.PA+17               # Status led is on PA17
