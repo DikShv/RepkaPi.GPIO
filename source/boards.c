@@ -50,12 +50,12 @@ const int pin_to_gpio_repkapi3[41] = {
 
 const char* FUNCTIONS[] = {
   "INPUT","OUTPUT","RESERVED","UNKNOWN","SEE_MANUAL", // 0-4
-  "TWI0_SCK","TWI0_SDA",                              // 5-6
-  "TWI1_SCK","TWI1_SDA",                              // 7-8
+  "TWI1_SCK","TWI1_SDA",                              // 5-6
+  "TWI0_SCK","TWI0_SDA",                              // 7-8
   "TWI2_SCK","TWI2_SDA",                              // 9-10
   "S_TWI_SCK", "S_TWI_SDA",                           // 11-12
-  "SPI0_CS","SPI0_CLK","SPI0_MOSI","SPI0_MISO",       // 13-16
-  "SPI1_CS","SPI1_CLK","SPI1_MOSI","SPI1_MISO",       // 17-20
+  "SPI0_CS0","SPI0_CLK","SPI0_MOSI","SPI0_MISO",       // 13-16
+  "SPI1_CS0","SPI1_CLK","SPI1_MOSI","SPI1_MISO",       // 17-20
   "UART0_TX","UART0_RX",                              // 21-22
   "UART1_TX","UART1_RX","UART1_RTS","UART1_CTS",      // 23-26
   "UART2_TX","UART2_RX","UART2_RTS","UART2_CTS",      // 27-30

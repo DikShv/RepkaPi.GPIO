@@ -27,8 +27,8 @@ SOFTWARE.
 #define MODE_UNKNOWN   -1
 #define BOARD          10
 #define BCM            11
-#define MODE_SOC       12
-#define SUNXI          13
+#define MODE_SOC       13
+#define SUNXI          12
 
 #define ALT_UNKNOWN    -1
 
