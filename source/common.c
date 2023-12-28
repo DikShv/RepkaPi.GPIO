@@ -25,10 +25,11 @@ SOFTWARE.
 #include "boards.h"
 #include "common.h"
 
-int board_type = BOARD_UNKNOWN;
+int board_type = REPKAPI3;
 int gpio_mode = MODE_UNKNOWN;
 int setup_error = 0;
 int module_setup = 0;
+int gpio_chip = 0;
 
 /* Physical pin to BCM channel */
 const int phys_To_BCM[41] = {
@@ -114,10 +115,10 @@ int check_gpio_priv(void)
 		return 1;
 	}
 	// check mmap setup has worked
-	/*if (!module_setup)
+	if (!module_setup)
 	{
 		PyErr_SetString(PyExc_RuntimeError, "No access to /dev/mem.  Try running as root!");
 		return 2;
-	}*/
+	}
 	return 0;
 }

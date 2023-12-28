@@ -27,31 +27,36 @@ SOFTWARE.
 #include <sys/mman.h>
 #include "c_gpio.h"
 
-static volatile uint32_t *gpio_map;
+static volatile uint32_t *gpio_map[2];
 
-uint32_t readl(uint32_t addr)
+
+uint32_t readl(uint32_t addr, int chip)
 {
 	uint32_t val = 0;
 	uint32_t mmap_base = (addr & ~MAP_MASK);
 	uint32_t mmap_seek = ((addr - mmap_base) >> 2);
-	val = *(gpio_map + mmap_seek);
+	val = *(gpio_map[chip] + mmap_seek);
 	if(RPiGPIODebug)
-		printf("mmap_base = 0x%x\t mmap_seek = 0x%x\t gpio_map = 0x%x\t total = 0x%x\n",mmap_base,mmap_seek,gpio_map,(gpio_map + mmap_seek));
+		printf("mmap_base = 0x%x\t mmap_seek = 0x%x\t gpio_map = 0x%x\t total = 0x%x\n",mmap_base,mmap_seek,gpio_map[chip],(gpio_map[chip] + mmap_seek));
 
 	return val;
 }
 
-void writel(uint32_t val, uint32_t addr)
+void writel(uint32_t val, uint32_t addr, int chip)
 {
   uint32_t mmap_base = (addr & ~MAP_MASK);
   uint32_t mmap_seek = ((addr - mmap_base) >> 2);
-  *(gpio_map + mmap_seek) = val;
+  *(gpio_map[chip] + mmap_seek) = val;
 }
 
 int setup(int gpio)
 {
 	int mem_fd;
 	uint8_t *gpio_mem;
+	int chip = 0;
+
+	if(gpio>=352 && gpio<=363)
+		chip=1;
 
 	if ((mem_fd = open("/dev/mem", O_RDWR|O_SYNC) ) < 0)
 	{
@@ -64,18 +69,13 @@ int setup(int gpio)
 	if ((uint32_t)gpio_mem % PAGE_SIZE)
 		gpio_mem += PAGE_SIZE - ((uint32_t)gpio_mem % PAGE_SIZE);
 
-	
 
-	
-	if(gpio>=352 && gpio<=363)
-		gpio_map = (uint32_t *)mmap( (caddr_t)gpio_mem, BLOCK_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED|MAP_FIXED, mem_fd, GPIO_BASE_RPI_PL);
-	else
-		gpio_map = (uint32_t *)mmap( (caddr_t)gpio_mem, BLOCK_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED|MAP_FIXED, mem_fd, GPIO_BASE_RPI);
+	gpio_map[chip] = (uint32_t *)mmap( (caddr_t)gpio_mem, BLOCK_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED|MAP_FIXED, mem_fd, GPIO_BASE_RPI[chip]);
 
 	if(RPiGPIODebug)
-		printf("gpio_mem = 0x%x\t gpio_map = 0x%x\t gpio = %d\n",gpio_mem,gpio_map,gpio);
+		printf("gpio_mem = 0x%x\t gpio_map = 0x%x\t gpio = %d\n",gpio_mem,gpio_map[chip],gpio);
 
-	if ((uint32_t)gpio_map < 0)
+	if ((uint32_t)gpio_map[chip] < 0)
 		return SETUP_MMAP_FAIL;
 
 	return SETUP_OK;
@@ -85,20 +85,21 @@ int gpio_function(int gpio)
 {
 	uint32_t regval = 0;
 	int gpio2 = gpio;
-	if(gpio2>=352 && gpio2<=363)
+	int chip = 0;
+
+	if(gpio>=352 && gpio<=363){
+		chip=1;
 		gpio2 = gpio2 - 352;
+	}	
 
 	int bank = gpio2 >> 5;
 	int index = gpio2 - (bank << 5);
 	int offset = ((index - ((index >> 3) << 3)) << 2);
 	uint32_t phyaddr;
+	
+	phyaddr = SUNXI_GPIO_BASE[chip] + (bank * 36) + ((index >> 3) << 2);
 
-	if(gpio>=352 && gpio<=363)
-		phyaddr = SUNXI_GPIO_BASE_PL + (bank * 36) + ((index >> 3) << 2);
-	else
-		phyaddr = SUNXI_GPIO_BASE + (bank * 36) + ((index >> 3) << 2);
-
-	regval = readl(phyaddr);
+	regval = readl(phyaddr, chip);
 	if (RPiGPIODebug)
 		printf("read reg val: 0x%x offset:%d\n",regval,offset);
 
@@ -114,33 +115,35 @@ void set_pullupdn(int gpio, int pud)//void sunxi_pullUpDnControl (int pin, int p
 {
 	uint32_t regval = 0;
 	int gpio2 = gpio;
-	if(gpio2>=352 && gpio2<=363)
+	int chip = 0;
+
+	if(gpio>=352 && gpio<=363){
+		chip=1;
 		gpio2 = gpio2 - 352;
+	}	
+
 	int bank = gpio2 >> 5;
 	int index = gpio2 - (bank << 5);
 	int sub = index >> 4;
 	int sub_index = index - 16*sub;
 	uint32_t phyaddr;
-
-	if(gpio>=352 && gpio<=363)
-		phyaddr = SUNXI_GPIO_BASE_PL + (bank * 36) + 0x1C + 4*sub; // +0x1c -> pullUpDn reg
-	else
-		phyaddr = SUNXI_GPIO_BASE + (bank * 36) + 0x1C + 4*sub; // +0x1c -> pullUpDn reg
+		
+	phyaddr = SUNXI_GPIO_BASE[chip] + (bank * 36) + 0x1C + 4*sub; // +0x1c -> pullUpDn reg
 
 	
 
 	if (RPiGPIODebug)
-		printf("func:%s pin:%d,bank:%d index:%d sub:%d phyaddr:0x%x\n",__func__, gpio,bank,index,sub,phyaddr);
+		printf("func:%s pin:%d chip:%d bank:%d index:%d sub:%d phyaddr:0x%x\n",__func__, gpio,chip,bank,index,sub,phyaddr);
 
-	regval = readl(phyaddr);
+	regval = readl(phyaddr, chip);
 	if (RPiGPIODebug)
 		printf("pullUpDn reg:0x%x, pud:0x%x sub_index:%d\n", regval, pud, sub_index);
 	regval &= ~(3 << (sub_index << 1));
 	regval |= (pud << (sub_index << 1));
 	if (RPiGPIODebug)
 		printf("pullUpDn val ready to set:0x%x\n", regval);
-	writel(regval, phyaddr);
-	regval = readl(phyaddr);
+	writel(regval, phyaddr, chip);
+	regval = readl(phyaddr, chip);
 	if (RPiGPIODebug)
 		printf("pullUpDn reg after set:0x%x  addr:0x%x\n", regval, phyaddr);
 }
@@ -149,23 +152,25 @@ void setup_gpio(int gpio, int direction, int pud)//void sunxi_set_gpio_mode(int 
 {
 	uint32_t regval = 0;
 	int gpio2 = gpio;
-	if(gpio2>=352 && gpio2<=363)
+	int chip = 0;
+
+	if(gpio>=352 && gpio<=363){
+		chip=1;
 		gpio2 = gpio2 - 352;
+	}	
+
 	int bank = gpio2 >> 5;
 	int index = gpio2 - (bank << 5);
 	int offset = ((index - ((index >> 3) << 3)) << 2);
 	uint32_t phyaddr;
-
-	if(gpio>=352 && gpio<=363)
-		phyaddr = SUNXI_GPIO_BASE_PL + (bank * 36) + ((index >> 3) << 2);
-	else
-		phyaddr = SUNXI_GPIO_BASE + (bank * 36) + ((index >> 3) << 2);
+		
+	phyaddr = SUNXI_GPIO_BASE[chip] + (bank * 36) + ((index >> 3) << 2);
 
 
 	if (RPiGPIODebug)
-		printf("func:%s pin:%d, direction:%d bank:%d index:%d phyaddr:0x%x\n",__func__, gpio , direction,bank,index,phyaddr);
+		printf("func:%s pin:%d chip:%d direction:%d bank:%d index:%d phyaddr:0x%x\n",__func__, gpio,chip , direction,bank,index,phyaddr);
 
-	regval = readl(phyaddr);
+	regval = readl(phyaddr,chip);
 	if (RPiGPIODebug)
 		printf("read reg val: 0x%x offset:%d\n",regval,offset);
 
@@ -174,8 +179,8 @@ void setup_gpio(int gpio, int direction, int pud)//void sunxi_set_gpio_mode(int 
 	if(INPUT == direction)
 	{
 		regval &= ~(7 << offset);
-		writel(regval, phyaddr);
-		regval = readl(phyaddr);
+		writel(regval, phyaddr,chip);
+		regval = readl(phyaddr,chip);
 		if (RPiGPIODebug)
 			printf("Input mode set over reg val: 0x%x\n",regval);
 	}
@@ -185,8 +190,8 @@ void setup_gpio(int gpio, int direction, int pud)//void sunxi_set_gpio_mode(int 
 	   regval |=  (1 << offset);
 	   if (RPiGPIODebug)
 			printf("Out mode ready set val: 0x%x\n",regval);
-	   writel(regval, phyaddr);
-	   regval = readl(phyaddr);
+	   writel(regval, phyaddr, chip);
+	   regval = readl(phyaddr, chip);
 	   if (RPiGPIODebug)
 			printf("Out mode set over reg val: 0x%x\n",regval);
 	}
@@ -200,38 +205,40 @@ void output_gpio(int gpio, int value) //void sunxi_digitalWrite(int pin, int val
 {
 	uint32_t regval = 0;
 	int gpio2 = gpio;
-	if(gpio2>=352 && gpio2<=363)
+	int chip = 0;
+
+	if(gpio>=352 && gpio<=363){
+		chip=1;
 		gpio2 = gpio2 - 352;
+	}	
+
 	int bank = gpio2 >> 5;
 	int index = gpio2 - (bank << 5);
 	uint32_t phyaddr;
-
-	if(gpio>=352 && gpio<=363)
-		phyaddr = SUNXI_GPIO_BASE_PL + (bank * 36) + 0x10; // +0x10 -> data reg
-	else
-		phyaddr = SUNXI_GPIO_BASE + (bank * 36) + 0x10; // +0x10 -> data reg
+		
+	phyaddr = SUNXI_GPIO_BASE[chip] + (bank * 36) + 0x10; // +0x10 -> data reg
 
 	
 
 	if (RPiGPIODebug)
-		printf("func:%s pin:%d, value:%d bank:%d index:%d phyaddr:0x%x\n",__func__, gpio , value,bank,index,phyaddr);
+		printf("func:%s pin:%d chip:%d value:%d bank:%d index:%d phyaddr:0x%x\n",__func__, gpio,chip  , value,bank,index,phyaddr);
 
-	regval = readl(phyaddr);
+	regval = readl(phyaddr,chip);
 	if (RPiGPIODebug)
 		printf("before write reg val: 0x%x,index:%d\n",regval,index);
 	if(0 == value)
 	{
 		regval &= ~(1 << index);
-		writel(regval, phyaddr);
-		regval = readl(phyaddr);
+		writel(regval, phyaddr,chip);
+		regval = readl(phyaddr,chip);
 		if (RPiGPIODebug)
 			printf("LOW val set over reg val: 0x%x\n",regval);
 	}
 	else
 	{
 		regval |= (1 << index);
-		writel(regval, phyaddr);
-		regval = readl(phyaddr);
+		writel(regval, phyaddr,chip);
+		regval = readl(phyaddr,chip);
 		if (RPiGPIODebug)
 			printf("HIGH val set over reg val: 0x%x\n",regval);
 	}
@@ -241,22 +248,24 @@ int input_gpio(int gpio)//int sunxi_digitalRead(int pin)
 {
 	uint32_t regval = 0;
 	int gpio2 = gpio;
-	if(gpio2>=352 && gpio2<=363)
+	int chip = 0;
+
+	if(gpio>=352 && gpio<=363){
+		chip=1;
 		gpio2 = gpio2 - 352;
+	}
+
 	int bank = gpio2 >> 5;
 	int index = gpio2 - (bank << 5);
 	uint32_t phyaddr;
-
-	if(gpio>=352 && gpio<=363)
-		phyaddr = SUNXI_GPIO_BASE_PL + (bank * 36) + 0x10; // +0x10 -> data reg
-	else
-		phyaddr = SUNXI_GPIO_BASE + (bank * 36) + 0x10; // +0x10 -> data reg
+		
+	phyaddr = SUNXI_GPIO_BASE[chip] + (bank * 36) + 0x10; // +0x10 -> data reg
 
 
 	if (RPiGPIODebug)
-		printf("func:%s pin:%d,bank:%d index:%d phyaddr:0x%x\n",__func__, gpio,bank,index,phyaddr);
+		printf("func:%s pin:%d chip:%d,bank:%d index:%d phyaddr:0x%x\n",__func__, gpio,chip,bank,index,phyaddr);
 
-	regval = readl(phyaddr);
+	regval = readl(phyaddr,chip);
 	regval = regval >> index;
 	regval &= 1;
 	if (RPiGPIODebug)
@@ -297,5 +306,6 @@ void set_low_event(int gpio, int enable)
 
 void cleanup(void)
 {
-    munmap((caddr_t)gpio_map, BLOCK_SIZE);
+    munmap((caddr_t)gpio_map[0], BLOCK_SIZE);
+    munmap((caddr_t)gpio_map[1], BLOCK_SIZE);
 }

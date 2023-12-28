@@ -37,6 +37,7 @@ PyObject *unknown;
 PyObject *board;
 PyObject *bcm;
 PyObject *soc;
+PyObject *sysfs;
 PyObject *version;
 PyObject *bunknown;
 PyObject *brepkapi3;

@@ -29,6 +29,7 @@ SOFTWARE.
 #include "constants.h"
 
 static int gpio_warnings = 1;
+static PyObject *board_info;
 
 struct py_callback
 {
@@ -41,14 +42,17 @@ static struct py_callback *py_callbacks = NULL;
 static int mmap_gpio_mem(int gpio)
 {
   int result;
+  int gc;
 
-  if (module_setup)
-    return 0;
+  if(gpio>=352 && gpio<=363)
+    gc=1;
+  else
+    gc=0;
 
   result = setup(gpio);
   if (result == SETUP_DEVMEM_FAIL)
   {
-    PyErr_SetString(PyExc_RuntimeError, "No access to /dev/mem.  Try running as root!");
+    PyErr_SetString(PyExc_RuntimeError, "Нет доступа к /dev/mem.  Запустите под root!");
     return 1;
   } else if (result == SETUP_MALLOC_FAIL) {
     PyErr_NoMemory();
@@ -57,7 +61,11 @@ static int mmap_gpio_mem(int gpio)
     PyErr_SetString(PyExc_RuntimeError, "Mmap of GPIO registers failed");
     return 3;
   } else { // result == SETUP_OK
-    module_setup = 0;
+    module_setup = 1;
+    if(gpio>=352 && gpio<=363)
+      gpio_chip_1=1;
+    else
+      gpio_chip_0=1;
 		//printf("SETUP_OK!\n");
     return 0;
   }
@@ -83,8 +91,7 @@ static PyObject *py_setrpi(PyObject *self, PyObject *args)
 
   //here is the 'pin_to_gpio' initialization
   switch (board_type) {
-    case 1 :
-    case 2 : pin_to_gpio = &pin_to_gpio_repkapi3; break;
+    case 1 :pin_to_gpio = &pin_to_gpio_repkapi3; break;
   }
 
   Py_RETURN_NONE;
@@ -103,7 +110,7 @@ static PyObject *py_getrpi(PyObject *self, PyObject *args)
    if (board_type == BOARD_UNKNOWN)
       Py_RETURN_NONE;
 
-   value = Py_BuildValue("i", board_type);
+   value = Py_BuildValue("s", BOARDS[board_type]);
    return value;
 }
 
@@ -125,7 +132,7 @@ static PyObject *py_setmode(PyObject *self, PyObject *args)
     return NULL;
   }
 
-  if (gpio_mode != MODE_SOC && board_type == BOARD_UNKNOWN)
+  if ((gpio_mode != MODE_SOC) && board_type == BOARD_UNKNOWN)
   {
     PyErr_SetString(PyExc_ValueError, "Please use setboard(board) before setmode()");
     return NULL;
@@ -170,89 +177,292 @@ static PyObject *py_setwarnings(PyObject *self, PyObject *args)
 static PyObject *py_setup_channel(PyObject *self, PyObject *args, PyObject *kwargs)
 {
   unsigned int gpio;
-  int channel, direction;
+  int channel = -1;
+  int direction;
+  int i, chancount;
+  PyObject *chanlist = NULL;
+  PyObject *chantuple = NULL;
+  PyObject *tempobj;
   int pud = PUD_OFF + PY_PUD_CONST_OFFSET;
   int initial = -1;
   static char *kwlist[] = {"channel", "direction", "pull_up_down", "initial", NULL};
-  int func, fn;
+  int func;
 
-  if (!PyArg_ParseTupleAndKeywords(args, kwargs, "ii|ii", kwlist, &channel, &direction, &pud, &initial))
-    return NULL;
+  int setup_one(void) {
+      if (get_gpio_number(channel, &gpio))
+         return 0;
 
-  // check module has been imported cleanly
-  if (setup_error)
-  {
-    PyErr_SetString(PyExc_RuntimeError, "Module not imported correctly!");
-    return NULL;
-  }
+      if (mmap_gpio_mem(gpio))
+        return 0;
 
-  if (get_gpio_number(channel, &gpio))
-    return NULL;
+      func = gpio_function(gpio);
+      if (gpio_warnings &&                             // warnings enabled and
+          ((func != 0 && func != 1) ||                 // (already one of the alt functions or
+          (gpio_direction[gpio] == -1 && func == 1)))  // already an output not set from this program)
+      {
+         PyErr_WarnEx(NULL, "This channel is already in use, continuing anyway.  Use GPIO.setwarnings(False) to disable warnings.", 1);
+      }
 
-  if (direction != INPUT && direction != OUTPUT)
-  {
-    PyErr_SetString(PyExc_ValueError, "An invalid direction was passed to setup()");
-    return NULL;
-  }
+      // warn about pull/up down on i2c channels
+      if (gpio_warnings) {
+         if (gpio == 12 || gpio == 11) {
+            if (pud == PUD_UP || pud == PUD_DOWN)
+               PyErr_WarnEx(NULL, "На этом канале установлен физический подтягивающий резистор!", 1);
+         }
+      }
 
-  if (direction == OUTPUT)
-    pud = PUD_OFF + PY_PUD_CONST_OFFSET;
+      if (direction == OUTPUT && (initial == LOW || initial == HIGH)) {
+         output_gpio(gpio, initial);
+      }
+      setup_gpio(gpio, direction, pud);
+      gpio_direction[gpio] = direction;
+      return 1;
+   }
 
-  pud -= PY_PUD_CONST_OFFSET;
-  if (pud != PUD_OFF && pud != PUD_DOWN && pud != PUD_UP)
-  {
-    PyErr_SetString(PyExc_ValueError, "Invalid value for pull_up_down - should be either PUD_OFF, PUD_UP or PUD_DOWN");
-    return NULL;
-  }
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "Oi|ii", kwlist, &chanlist, &direction, &pud, &initial))
+      return NULL;
+#if PY_MAJOR_VERSION >= 3
+   if (PyLong_Check(chanlist)) {
+      channel = (int)PyLong_AsLong(chanlist);
+#else
+   if (PyInt_Check(chanlist)) {
+      channel = (int)PyInt_AsLong(chanlist);
+#endif
+    if (PyErr_Occurred())
+         return NULL;
+      chanlist = NULL;
+   } else if (PyList_Check(chanlist)) {
+      // do nothing
+   } else if (PyTuple_Check(chanlist)) {
+      chantuple = chanlist;
+      chanlist = NULL;
+   } else {
+      // raise exception
+      PyErr_SetString(PyExc_ValueError, "Channel must be an integer or list/tuple of integers");
+      return NULL;
+   }
 
-  if (mmap_gpio_mem(gpio))
-    return NULL;
+   // check module has been imported cleanly
+   if (setup_error){
+      PyErr_SetString(PyExc_RuntimeError, "Module not imported correctly!");
+      return NULL;
+   }
 
-  func = gpio_function(gpio);
-  /* Prevent Break of SPI, TWI, UART,... */
-  if (func != 0 && func != 1 && func != 7) {
-    fn = gpio_function_name(gpio, func, board_type);
-    PyErr_Format(PyExc_ValueError, "This channel is already in use by system as %s.", FUNCTIONS[fn]);
-    return NULL;
-  }
+   if (direction != INPUT && direction != OUTPUT) {
+      PyErr_SetString(PyExc_ValueError, "An invalid direction was passed to setup()");
+      return 0;
+   }
 
-  if (gpio_warnings && (gpio_direction[gpio] == -1 && func == 1))
-  {
-    PyErr_Warn(NULL, "This channel is already in use, continuing anyway. Use GPIO.setwarnings(False) to disable warnings.");
-  }
+   if (direction == OUTPUT && pud != PUD_OFF + PY_PUD_CONST_OFFSET) {
+      PyErr_SetString(PyExc_ValueError, "pull_up_down parameter is not valid for outputs");
+      return 0;
+   }
 
-  if (direction == OUTPUT && (initial == LOW || initial == HIGH))
-  {
-    output_gpio(gpio, initial);
-  }
-  setup_gpio(gpio, direction, pud);
-  gpio_direction[gpio] = direction;
+   if (direction == INPUT && initial != -1) {
+      PyErr_SetString(PyExc_ValueError, "initial parameter is not valid for inputs");
+      return 0;
+   }
 
-  Py_RETURN_NONE;
+   if (direction == OUTPUT)
+      pud = PUD_OFF + PY_PUD_CONST_OFFSET;
+
+   pud -= PY_PUD_CONST_OFFSET;
+   if (pud != PUD_OFF && pud != PUD_DOWN && pud != PUD_UP) {
+      PyErr_SetString(PyExc_ValueError, "Invalid value for pull_up_down - should be either PUD_OFF, PUD_UP or PUD_DOWN");
+      return NULL;
+   }
+
+   if (chanlist) {
+       chancount = PyList_Size(chanlist);
+   } else if (chantuple) {
+       chancount = PyTuple_Size(chantuple);
+   } else {
+       if (!setup_one())
+          return NULL;
+       Py_RETURN_NONE;
+   }
+
+   for (i=0; i<chancount; i++) {
+      if (chanlist) {
+         if ((tempobj = PyList_GetItem(chanlist, i)) == NULL) {
+            return NULL;
+         }
+      } else { // assume chantuple
+         if ((tempobj = PyTuple_GetItem(chantuple, i)) == NULL) {
+            return NULL;
+         }
+      }
+
+#if PY_MAJOR_VERSION >= 3
+      if (PyLong_Check(tempobj)) {
+         channel = (int)PyLong_AsLong(tempobj);
+#else
+      if (PyInt_Check(tempobj)) {
+         channel = (int)PyInt_AsLong(tempobj);
+#endif
+         if (PyErr_Occurred())
+             return NULL;
+      } else {
+          PyErr_SetString(PyExc_ValueError, "Channel must be an integer");
+          return NULL;
+      }
+
+      if (!setup_one())
+         return NULL;
+   }
+
+   Py_RETURN_NONE;
 }
 
 // python function output(channel, value)
 static PyObject *py_output_gpio(PyObject *self, PyObject *args)
 {
    unsigned int gpio;
-   int channel, value;
+   int channel = -1;
+   int value = -1;
+   int i;
+   PyObject *chanlist = NULL;
+   PyObject *valuelist = NULL;
+   PyObject *chantuple = NULL;
+   PyObject *valuetuple = NULL;
+   PyObject *tempobj = NULL;
+   int chancount = -1;
+   int valuecount = -1;
 
-   if (!PyArg_ParseTuple(args, "ii", &channel, &value))
-      return NULL;
+   int output(void) {
+      if (get_gpio_number(channel, &gpio))
+          return 0;
 
-   if (get_gpio_number(channel, &gpio))
-       return NULL;
+      if (gpio_direction[gpio] != OUTPUT)
+      {
+         PyErr_SetString(PyExc_RuntimeError, "The GPIO channel has not been set up as an OUTPUT");
+         return 0;
+      }
 
-   if (gpio_direction[gpio] != OUTPUT)
-   {
-      PyErr_SetString(PyExc_RuntimeError, "The GPIO channel has not been set up as an OUTPUT");
-      return NULL;
+      if (check_gpio_priv())
+         return 0;
+
+      output_gpio(gpio, value);
+      return 1;
    }
 
-   if (check_gpio_priv())
-      return NULL;
+   if (!PyArg_ParseTuple(args, "OO", &chanlist, &valuelist))
+       return NULL;
 
-   output_gpio(gpio, value);
+#if PY_MAJOR_VERSION >= 3
+   if (PyLong_Check(chanlist)) {
+      channel = (int)PyLong_AsLong(chanlist);
+#else
+   if (PyInt_Check(chanlist)) {
+      channel = (int)PyInt_AsLong(chanlist);
+#endif
+      if (PyErr_Occurred())
+         return NULL;
+      chanlist = NULL;
+   } else if (PyList_Check(chanlist)) {
+      // do nothing
+   } else if (PyTuple_Check(chanlist)) {
+      chantuple = chanlist;
+      chanlist = NULL;
+   } else {
+       PyErr_SetString(PyExc_ValueError, "Channel must be an integer or list/tuple of integers");
+       return NULL;
+   }
+
+#if PY_MAJOR_VERSION >= 3
+   if (PyLong_Check(valuelist)) {
+       value = (int)PyLong_AsLong(valuelist);
+#else
+   if (PyInt_Check(valuelist)) {
+       value = (int)PyInt_AsLong(valuelist);
+#endif
+      if (PyErr_Occurred())
+         return NULL;
+       valuelist = NULL;
+   } else if (PyList_Check(valuelist)) {
+      // do nothing
+   } else if (PyTuple_Check(valuelist)) {
+      valuetuple = valuelist;
+      valuelist = NULL;
+   } else {
+       PyErr_SetString(PyExc_ValueError, "Value must be an integer/boolean or a list/tuple of integers/booleans");
+       return NULL;
+   }
+
+   if (chanlist)
+       chancount = PyList_Size(chanlist);
+   if (chantuple)
+       chancount = PyTuple_Size(chantuple);
+   if (valuelist)
+       valuecount = PyList_Size(valuelist);
+   if (valuetuple)
+       valuecount = PyTuple_Size(valuetuple);
+   if ((chancount != -1 && chancount != valuecount && valuecount != -1) || (chancount == -1 && valuecount != -1)) {
+       PyErr_SetString(PyExc_RuntimeError, "Number of channels != number of values");
+       return NULL;
+   }
+
+   if (chancount == -1) {
+      if (!output())
+         return NULL;
+      Py_RETURN_NONE;
+   }
+
+   for (i=0; i<chancount; i++) {
+      // get channel number
+      if (chanlist) {
+         if ((tempobj = PyList_GetItem(chanlist, i)) == NULL) {
+            return NULL;
+         }
+      } else { // assume chantuple
+         if ((tempobj = PyTuple_GetItem(chantuple, i)) == NULL) {
+            return NULL;
+         }
+      }
+
+#if PY_MAJOR_VERSION >= 3
+      if (PyLong_Check(tempobj)) {
+         channel = (int)PyLong_AsLong(tempobj);
+#else
+      if (PyInt_Check(tempobj)) {
+         channel = (int)PyInt_AsLong(tempobj);
+#endif
+         if (PyErr_Occurred())
+             return NULL;
+      } else {
+          PyErr_SetString(PyExc_ValueError, "Channel must be an integer");
+          return NULL;
+      }
+
+      // get value
+      if (valuecount > 0) {
+          if (valuelist) {
+             if ((tempobj = PyList_GetItem(valuelist, i)) == NULL) {
+                return NULL;
+             }
+          } else { // assume valuetuple
+             if ((tempobj = PyTuple_GetItem(valuetuple, i)) == NULL) {
+                return NULL;
+             }
+          }
+#if PY_MAJOR_VERSION >= 3
+          if (PyLong_Check(tempobj)) {
+             value = (int)PyLong_AsLong(tempobj);
+#else
+          if (PyInt_Check(tempobj)) {
+             value = (int)PyInt_AsLong(tempobj);
+#endif
+             if (PyErr_Occurred())
+                 return NULL;
+          } else {
+              PyErr_SetString(PyExc_ValueError, "Value must be an integer or boolean");
+              return NULL;
+          }
+      }
+      if (!output())
+         return NULL;
+   }
+
    Py_RETURN_NONE;
 }
 
@@ -356,49 +566,113 @@ static PyObject *py_gpio_function_string(PyObject *self, PyObject *args)
 // python function cleanup(channel=None)
 static PyObject *py_cleanup(PyObject *self, PyObject *args, PyObject *kwargs)
 {
-	int i;
-	int found = 0;
-	int channel = -666;
-	unsigned int gpio;
-	static char *kwlist[] = {"channel", NULL};
+   int i;
+   int chancount = -666;
+   int found = 0;
+   int channel = -666;
+   unsigned int gpio;
+   PyObject *chanlist = NULL;
+   PyObject *chantuple = NULL;
+   PyObject *tempobj;
+   static char *kwlist[] = {"channel", NULL};
 
-	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|i", kwlist, &channel))
-		return NULL;
-
-	if (channel != -666 && get_gpio_number(channel, &gpio))
-		return NULL;
-
-  if (module_setup && !setup_error) {
-    if (channel == -666) {
-      // clean up any /sys/class exports
-      event_cleanup_all();
-      // set everything back to input
-      for (i=0; i<383; i++) {
-        if (gpio_direction[i] != -1) {
-          //printf("Clean %d\n",i);
-          setup_gpio(i, INPUT, PUD_OFF); //take care
-          gpio_direction[i] = -1;
-          found = 1;
-          //printf("Clean Fnished %d \n",i);
-        }
-      }
-    } else {
+   void cleanup_one(void)
+   {
       // clean up any /sys/class exports
       event_cleanup(gpio);
+
       // set everything back to input
       if (gpio_direction[gpio] != -1) {
-        setup_gpio(gpio, INPUT, PUD_OFF);
-        gpio_direction[gpio] = -1;
-        found = 1;
+         setup_gpio(gpio, INPUT, PUD_OFF);
+         gpio_direction[gpio] = -1;
+         found = 1;
       }
-    }
-  }
+   }
 
-  if (!found && gpio_warnings) {
-   PyErr_Warn(NULL, "No channels have been set up yet - nothing to clean up!  Try cleaning up at the end of your program instead!");
-  }
+   if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|O", kwlist, &chanlist))
+      return NULL;
 
-  Py_RETURN_NONE;
+   if (chanlist == NULL) {  // channel kwarg not set
+      // do nothing
+#if PY_MAJOR_VERSION > 2
+   } else if (PyLong_Check(chanlist)) {
+      channel = (int)PyLong_AsLong(chanlist);
+#else
+   } else if (PyInt_Check(chanlist)) {
+      channel = (int)PyInt_AsLong(chanlist);
+#endif
+      if (PyErr_Occurred())
+         return NULL;
+      chanlist = NULL;
+   } else if (PyList_Check(chanlist)) {
+      chancount = PyList_Size(chanlist);
+   } else if (PyTuple_Check(chanlist)) {
+      chantuple = chanlist;
+      chanlist = NULL;
+      chancount = PyTuple_Size(chantuple);
+   } else {
+      // raise exception
+      PyErr_SetString(PyExc_ValueError, "Channel must be an integer or list/tuple of integers");
+      return NULL;
+   }
+
+   if (module_setup && !setup_error) {
+      if (channel == -666 && chancount == -666) {   // channel not set - cleanup everything
+         // clean up any /sys/class exports
+         event_cleanup_all();
+
+         // set everything back to input
+         for (i=0; i<383; i++) {
+            if (gpio_direction[i] != -1) {
+               setup_gpio(i, INPUT, PUD_OFF);
+               gpio_direction[i] = -1;
+               found = 1;
+            }
+         }
+         gpio_mode = MODE_UNKNOWN;
+      } else if (channel != -666) {    // channel was an int indicating single channel
+         if (get_gpio_number(channel, &gpio))
+            return NULL;
+         cleanup_one();
+      } else {  // channel was a list/tuple
+         for (i=0; i<chancount; i++) {
+            if (chanlist) {
+               if ((tempobj = PyList_GetItem(chanlist, i)) == NULL) {
+                  return NULL;
+               }
+            } else { // assume chantuple
+               if ((tempobj = PyTuple_GetItem(chantuple, i)) == NULL) {
+                  return NULL;
+               }
+            }
+
+#if PY_MAJOR_VERSION > 2
+            if (PyLong_Check(tempobj)) {
+               channel = (int)PyLong_AsLong(tempobj);
+#else
+            if (PyInt_Check(tempobj)) {
+               channel = (int)PyInt_AsLong(tempobj);
+#endif
+               if (PyErr_Occurred())
+                  return NULL;
+            } else {
+               PyErr_SetString(PyExc_ValueError, "Channel must be an integer");
+               return NULL;
+            }
+
+            if (get_gpio_number(channel, &gpio))
+               return NULL;
+            cleanup_one();
+         }
+      }
+   }
+
+   // check if any channels set up - if not warn about misuse of GPIO.cleanup()
+   if (!found && gpio_warnings) {
+      PyErr_WarnEx(NULL, "No channels have been set up yet - nothing to clean up!  Try cleaning up at the end of your program instead!", 1);
+   }
+
+   Py_RETURN_NONE;
 }
 
 /** EVENT **/
@@ -662,7 +936,7 @@ static const char moduledocstring[] = "GPIO functionality for Repka Pi boards us
 
 PyMethodDef rpi_gpio_methods[] = {
   {"setboard", py_setrpi, METH_VARARGS, "Set up Repka Pi board model to use."},
-  {"getboard", py_getrpi, METH_VARARGS, "Get Repka Pi board model in use."},
+  {"getboardmodel", py_getrpi, METH_VARARGS, "Get Repka Pi board model in use."},
   {"setmode", py_setmode, METH_VARARGS, "Set up numbering mode to use for channels.\nBOARD - Use Repka Pi board numbers\nBCM   - Use Broadcom GPIO 00..nn numbers\nSOC   - Use SUNXI port numbers"},
   {"getmode", py_getmode, METH_VARARGS, "Get numbering mode used for channel numbers.\nReturns BOARD, BCM, SOC or None"},
   {"setwarnings", py_setwarnings, METH_VARARGS, "Enable or disable warning messages"},
@@ -711,6 +985,17 @@ PyMODINIT_FUNC initGPIO(void)
 
   for (i=0; i<383; i++)
     gpio_direction[i] = -1;
+
+  board_info = Py_BuildValue("{sissssssssss}",
+                              "P1_REVISION",3,
+                              "REVISION","",
+                              "TYPE","Repka Pi 3",
+                              "MANUFACTURER","ИНТЕЛЛЕКТ",
+                              "PROCESSOR","Allwinner H5",
+                              "RAM","1GB");
+   PyModule_AddObject(module, "RPI_INFO", board_info);
+
+   pin_to_gpio = &pin_to_gpio_repkapi3;
 
   // Add PWM class
   if (PWM_init_PWMType() == NULL)

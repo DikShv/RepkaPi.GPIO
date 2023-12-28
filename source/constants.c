@@ -67,6 +67,9 @@ void define_constants(PyObject *module)
 	soc = Py_BuildValue("i", MODE_SOC);
 	PyModule_AddObject(module, "SOC", soc);
 
+	sysfs = Py_BuildValue("i", MODE_SOC);
+	PyModule_AddObject(module, "SYSFS", sysfs);
+
 	bunknown = Py_BuildValue("i", BOARD_UNKNOWN);
 	PyModule_AddObject(module, "BUNKNOWN", bunknown);
 

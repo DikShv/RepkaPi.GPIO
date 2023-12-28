@@ -28,6 +28,7 @@ SOFTWARE.
 #define BOARD          10
 #define BCM            11
 #define MODE_SOC       12
+#define SUNXI          13
 
 #define ALT_UNKNOWN    -1
 
@@ -38,6 +39,8 @@ const int (*pin_to_gpio)[41];
 int gpio_direction[383];
 int setup_error;
 int module_setup;
+int gpio_chip_0;
+int gpio_chip_1;
 
 int get_gpio_number(int channel, unsigned int *gpio);
 int check_gpio_priv(void);

@@ -65,6 +65,10 @@ const char* FUNCTIONS[] = {
   "IO DISABLED"
 };
 
+const char* BOARDS[] = {
+  "","Repka Pi 3"
+};
+
 /* Get Alt Function Name */
 int gpio_function_name(int gpio, int func, int board)
 {
@@ -97,7 +101,7 @@ int gpio_function_name(int gpio, int func, int board)
         case 353 : str = 12; break;
         case 354 : str = 35; break;
         case 355 : str = 36; break;
-        case 362 : str = 39; break;
+        case 362 : str = 37; break;
         default : str = 2; break;
       }
       break;
@@ -149,3 +153,5 @@ int gpio_function_name(int gpio, int func, int board)
   }
   return str;
 }
+
+

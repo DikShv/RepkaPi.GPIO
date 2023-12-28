@@ -23,5 +23,6 @@ SOFTWARE.
 const int pin_to_gpio_repkapi3[41];
 
 const char* FUNCTIONS[41];
+const char* BOARDS[2];
 
 int gpio_function_name(int gpio, int func, int board);
