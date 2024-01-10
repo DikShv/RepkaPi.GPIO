@@ -16,8 +16,19 @@ print (GPIO.VERSION)
 # Информация об устройстве
 print (GPIO.RPI_INFO)
 
-func = GPIO.gpio_function(362)
+func = GPIO.gpio_function(3)
 print(func)
 
-func_name = GPIO.gpio_function_name(362)
+func = GPIO.gpio_function(7)
+print(func)
+
+
+
+
+func_name = GPIO.gpio_function_name(3)
 print(func_name)
+
+func_name = GPIO.gpio_function_name(7)
+print(func_name)
+
+

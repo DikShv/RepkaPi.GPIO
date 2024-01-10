@@ -884,52 +884,68 @@ static PyObject *py_event_detected(PyObject *self, PyObject *args)
     Py_RETURN_FALSE;
 }
 
-// python function py_wait_for_edge(gpio, edge)
-static PyObject *py_wait_for_edge(PyObject *self, PyObject *args)
+// python function channel = wait_for_edge(channel, edge, bouncetime=None, timeout=None)
+static PyObject *py_wait_for_edge(PyObject *self, PyObject *args, PyObject *kwargs)
 {
-  unsigned int gpio;
-  int channel, edge, result;
-  char error[30];
+   unsigned int gpio;
+   int channel, edge, result;
+   int bouncetime = -666; // None
+   int timeout = -1; // None
 
-  if (!PyArg_ParseTuple(args, "ii", &channel, &edge))
-    return NULL;
+   static char *kwlist[] = {"channel", "edge", "bouncetime", "timeout", NULL};
 
-	if (get_gpio_number(channel, &gpio))
-    return NULL;
+   if (!PyArg_ParseTupleAndKeywords(args, kwargs, "ii|ii", kwlist, &channel, &edge, &bouncetime, &timeout))
+      return NULL;
 
-  // check channel is setup as an input
-  if (gpio_direction[gpio] != INPUT)
-  {
-    PyErr_SetString(PyExc_RuntimeError, "You must setup() the GPIO channel as an input first");
-    return NULL;
-  }
-  // is edge a valid value?
-  edge -= PY_EVENT_CONST_OFFSET;
-  if (edge != RISING_EDGE && edge != FALLING_EDGE && edge != BOTH_EDGE)
-  {
-    PyErr_SetString(PyExc_ValueError, "The edge must be set to RISING, FALLING or BOTH");
-    return NULL;
-  }
+   if (get_gpio_number(channel, &gpio))
+      return NULL;
 
-  if (check_gpio_priv())
-    return NULL;
+   // check channel is setup as an input
+   if (gpio_direction[gpio] != INPUT)
+   {
+      PyErr_SetString(PyExc_RuntimeError, "You must setup() the GPIO channel as an input first");
+      return NULL;
+   }
 
-  Py_BEGIN_ALLOW_THREADS // disable GIL
-  result = blocking_wait_for_edge(gpio, edge);
-  Py_END_ALLOW_THREADS   // enable GIL
+   // is edge a valid value?
+   edge -= PY_EVENT_CONST_OFFSET;
+   if (edge != RISING_EDGE && edge != FALLING_EDGE && edge != BOTH_EDGE)
+   {
+      PyErr_SetString(PyExc_ValueError, "The edge must be set to RISING, FALLING or BOTH");
+      return NULL;
+   }
 
-  if (result == 0) {
-    Py_INCREF(Py_None);
-    return Py_None;
-  } else if (result == 1) {
-    PyErr_SetString(PyExc_RuntimeError, "Edge detection events already enabled for this GPIO channel");
-    return NULL;
-  } else {
-    sprintf(error, "Error #%d waiting for edge", result);
-    PyErr_SetString(PyExc_RuntimeError, error);
-    return NULL;
-  }
-  Py_RETURN_NONE;
+   if (bouncetime <= 0 && bouncetime != -666)
+   {
+      PyErr_SetString(PyExc_ValueError, "Bouncetime must be greater than 0");
+      return NULL;
+   }
+
+   if (timeout <= 0 && timeout != -1)
+   {
+      PyErr_SetString(PyExc_ValueError, "Timeout must be greater than 0");
+      return NULL;
+   }
+
+   if (check_gpio_priv())
+      return NULL;
+
+   Py_BEGIN_ALLOW_THREADS // disable GIL
+   result = blocking_wait_for_edge(gpio, edge, bouncetime, timeout);
+   Py_END_ALLOW_THREADS   // enable GIL
+
+   if (result == 0) {
+      Py_RETURN_NONE;
+   } else if (result == -1) {
+      PyErr_SetString(PyExc_RuntimeError, "Conflicting edge detection events already exist for this GPIO channel");
+      return NULL;
+   } else if (result == -2) {
+      PyErr_SetString(PyExc_RuntimeError, "Error waiting for edge");
+      return NULL;
+   } else {
+      return Py_BuildValue("i", channel);
+   }
+
 }
 
 static const char moduledocstring[] = "GPIO functionality for Repka Pi boards using Python";
@@ -950,7 +966,7 @@ PyMethodDef rpi_gpio_methods[] = {
   {"remove_event_detect", py_remove_event_detect, METH_VARARGS, "Remove edge detection for a particular GPIO channel\nchannel - either board pin number or BCM number depending on which mode is set."},
   {"event_detected", py_event_detected, METH_VARARGS, "Returns True if an edge has occured on a given GPIO.  You need to enable edge detection using add_event_detect() first.\nchannel - either board pin number or BCM number depending on which mode is set."},
   {"add_event_callback", (PyCFunction)py_add_event_callback, METH_VARARGS | METH_KEYWORDS, "Add a callback for an event already defined using add_event_detect()\nchannel      - either board pin number or BCM number depending on which mode is set.\ncallback     - a callback function"},
-  {"wait_for_edge", py_wait_for_edge, METH_VARARGS, "Wait for an edge.\nchannel - either board pin number or BCM number depending on which mode is set.\nedge    - RISING, FALLING or BOTH"},
+  {"wait_for_edge", (PyCFunction)py_wait_for_edge, METH_VARARGS | METH_KEYWORDS, "Wait for an edge.  Returns the channel number or None on timeout.\nchannel      - either board pin number or BCM number depending on which mode is set.\nedge         - RISING, FALLING or BOTH\n[bouncetime] - time allowed between calls to allow for switchbounce\n[timeout]    - timeout in ms"},
   {NULL, NULL, 0, NULL}
 };
 

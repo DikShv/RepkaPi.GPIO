@@ -8,12 +8,12 @@ from time import sleep          # позволяет выставить заде
 
 GPIO.setboard(GPIO.REPKAPI3)        # Repka Pi 3
 GPIO.setmode(GPIO.BOARD)        # выбираем тип обращения к GPIO по номеру PIN (BOARD)
-GPIO.setup(15, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)    # устанавливаем pin 15 в input (Кнопка)
+GPIO.setup(19, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)    # устанавливаем pin 15 в input (Кнопка)
 GPIO.setup(11, GPIO.OUT)        # устанавливаем pin 11 как output (LED)
 
 try:
     while True:                 # цикл будет выполняться пока не нажмем CTRL+C
-        if GPIO.input(15) == 1:      # if pin 15 == 1
+        if GPIO.input(19) == 1:      # if pin 15 == 1
             print ("PIN 15 равен 1/HIGH/True - LED ON")
             GPIO.output(11, 1)  # выставляем pin 11 1/HIGH/True
         else:
