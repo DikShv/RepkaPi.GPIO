@@ -52,13 +52,13 @@ static int mmap_gpio_mem(int gpio)
   result = setup(gpio);
   if (result == SETUP_DEVMEM_FAIL)
   {
-    PyErr_SetString(PyExc_RuntimeError, "Нет доступа к /dev/mem.  Запустите под root!");
+    PyErr_SetString(PyExc_RuntimeError, "Нет доступа к /dev/mem. Попробуйте запустить под root! / No access to /dev/mem.  Try running as root!");
     return 1;
   } else if (result == SETUP_MALLOC_FAIL) {
     PyErr_NoMemory();
     return 2;
   } else if (result == SETUP_MMAP_FAIL) {
-    PyErr_SetString(PyExc_RuntimeError, "Mmap of GPIO registers failed");
+    PyErr_SetString(PyExc_RuntimeError, "Ошибка Mmap регистров GPIO / Mmap of GPIO registers failed");
     return 3;
   } else { // result == SETUP_OK
     module_setup = 1;
@@ -79,13 +79,13 @@ static PyObject *py_setrpi(PyObject *self, PyObject *args)
 
   if (setup_error)
   {
-    PyErr_SetString(PyExc_RuntimeError, "Module not imported correctly!");
+    PyErr_SetString(PyExc_RuntimeError, "Модуль импортирован неправильно! / Module not imported correctly!");
     return NULL;
   }
 
   if (board_type < REPKAPI3)
   {
-    PyErr_SetString(PyExc_ValueError, "An invalid board was passed to setboard()");
+    PyErr_SetString(PyExc_ValueError, "Передана не верная модель платы в setboard() / An invalid board was passed to setboard()");
     return NULL;
   }
 
@@ -103,7 +103,7 @@ static PyObject *py_getrpi(PyObject *self, PyObject *args)
 
    if (setup_error)
    {
-      PyErr_SetString(PyExc_RuntimeError, "Module not imported correctly!");
+      PyErr_SetString(PyExc_RuntimeError, "Модуль импортирован неправильно! / Module not imported correctly!");
       return NULL;
    }
 
@@ -122,19 +122,19 @@ static PyObject *py_setmode(PyObject *self, PyObject *args)
 
   if (setup_error)
   {
-      PyErr_SetString(PyExc_RuntimeError, "Module not imported correctly!");
+      PyErr_SetString(PyExc_RuntimeError, "Модуль импортирован неправильно! / Module not imported correctly!");
       return NULL;
   }
 
   if (gpio_mode != BOARD && gpio_mode != BCM && gpio_mode != MODE_SOC)
   {
-    PyErr_SetString(PyExc_ValueError, "An invalid mode was passed to setmode()");
+    PyErr_SetString(PyExc_ValueError, "Недопустимый режим был передан в setmode() / An invalid mode was passed to setmode()");
     return NULL;
   }
 
   if ((gpio_mode != MODE_SOC) && board_type == BOARD_UNKNOWN)
   {
-    PyErr_SetString(PyExc_ValueError, "Please use setboard(board) before setmode()");
+    PyErr_SetString(PyExc_ValueError, "Пожалуйста, используйте setboard(board) перед setmode() / Please use setboard(board) before setmode()");
     return NULL;
   }
 
@@ -147,7 +147,7 @@ static PyObject *py_getmode(PyObject *self, PyObject *args)
 
    if (setup_error)
    {
-      PyErr_SetString(PyExc_RuntimeError, "Module not imported correctly!");
+      PyErr_SetString(PyExc_RuntimeError, "Модуль импортирован неправильно! / Module not imported correctly!");
       return NULL;
    }
 
@@ -166,7 +166,7 @@ static PyObject *py_setwarnings(PyObject *self, PyObject *args)
 
    if (setup_error)
    {
-      PyErr_SetString(PyExc_RuntimeError, "Module not imported correctly!");
+      PyErr_SetString(PyExc_RuntimeError, "Модуль импортирован неправильно! / Module not imported correctly!");
       return NULL;
    }
 
@@ -200,7 +200,7 @@ static PyObject *py_setup_channel(PyObject *self, PyObject *args, PyObject *kwar
           ((func != 0 && func != 1) ||                 // (already one of the alt functions or
           (gpio_direction[gpio] == -1 && func == 1)))  // already an output not set from this program)
       {
-         PyErr_WarnEx(NULL, "This channel is already in use, continuing anyway.  Use GPIO.setwarnings(False) to disable warnings.", 1);
+         PyErr_Warn(NULL, "Этот канал уже используется, но выполнение продолжится. Используйте GPIO.setwarnings(False), чтобы отключить предупреждения. / This channel is already in use, continuing anyway. Use GPIO.setwarnings(False) to disable warnings.");
       }
 
       // warn about pull/up down on i2c channels
@@ -238,28 +238,28 @@ static PyObject *py_setup_channel(PyObject *self, PyObject *args, PyObject *kwar
       chanlist = NULL;
    } else {
       // raise exception
-      PyErr_SetString(PyExc_ValueError, "Channel must be an integer or list/tuple of integers");
+      PyErr_SetString(PyExc_ValueError, "Канал должен быть целым числом или списком/кортежом целых чисел / Channel must be an integer or list/tuple of integers");
       return NULL;
    }
 
    // check module has been imported cleanly
    if (setup_error){
-      PyErr_SetString(PyExc_RuntimeError, "Module not imported correctly!");
+      PyErr_SetString(PyExc_RuntimeError, "Модуль импортирован неправильно! / Module not imported correctly!");
       return NULL;
    }
 
    if (direction != INPUT && direction != OUTPUT) {
-      PyErr_SetString(PyExc_ValueError, "An invalid direction was passed to setup()");
+      PyErr_SetString(PyExc_ValueError, "В функцию setup() было передано неверное направление / An invalid direction was passed to setup()");
       return 0;
    }
 
    if (direction == OUTPUT && pud != PUD_OFF + PY_PUD_CONST_OFFSET) {
-      PyErr_SetString(PyExc_ValueError, "pull_up_down parameter is not valid for outputs");
+      PyErr_SetString(PyExc_ValueError, "Параметр pull_up_down не действителен для выходов / pull_up_down parameter is not valid for outputs");
       return 0;
    }
 
    if (direction == INPUT && initial != -1) {
-      PyErr_SetString(PyExc_ValueError, "initial parameter is not valid for inputs");
+      PyErr_SetString(PyExc_ValueError, "initial параметр не действителен для входов / initial parameter is not valid for inputs");
       return 0;
    }
 
@@ -268,7 +268,7 @@ static PyObject *py_setup_channel(PyObject *self, PyObject *args, PyObject *kwar
 
    pud -= PY_PUD_CONST_OFFSET;
    if (pud != PUD_OFF && pud != PUD_DOWN && pud != PUD_UP) {
-      PyErr_SetString(PyExc_ValueError, "Invalid value for pull_up_down - should be either PUD_OFF, PUD_UP or PUD_DOWN");
+      PyErr_SetString(PyExc_ValueError, "Недопустимое значение для pull_up_down — должно быть PUD_OFF, PUD_UP или PUD_DOWN. / Invalid value for pull_up_down - should be either PUD_OFF, PUD_UP or PUD_DOWN");
       return NULL;
    }
 
@@ -303,7 +303,7 @@ static PyObject *py_setup_channel(PyObject *self, PyObject *args, PyObject *kwar
          if (PyErr_Occurred())
              return NULL;
       } else {
-          PyErr_SetString(PyExc_ValueError, "Channel must be an integer");
+          PyErr_SetString(PyExc_ValueError, "Канал должен быть целым числом / Channel must be an integer");
           return NULL;
       }
 
@@ -335,7 +335,7 @@ static PyObject *py_output_gpio(PyObject *self, PyObject *args)
 
       if (gpio_direction[gpio] != OUTPUT)
       {
-         PyErr_SetString(PyExc_RuntimeError, "The GPIO channel has not been set up as an OUTPUT");
+         PyErr_SetString(PyExc_RuntimeError, "Канал GPIO не был настроен как OUTPUT / The GPIO channel has not been set up as an OUTPUT");
          return 0;
       }
 
@@ -365,7 +365,7 @@ static PyObject *py_output_gpio(PyObject *self, PyObject *args)
       chantuple = chanlist;
       chanlist = NULL;
    } else {
-       PyErr_SetString(PyExc_ValueError, "Channel must be an integer or list/tuple of integers");
+       PyErr_SetString(PyExc_ValueError, "Канал должен быть целым числом или списком/кортежом целых чисел / Channel must be an integer or list/tuple of integers");
        return NULL;
    }
 
@@ -385,7 +385,7 @@ static PyObject *py_output_gpio(PyObject *self, PyObject *args)
       valuetuple = valuelist;
       valuelist = NULL;
    } else {
-       PyErr_SetString(PyExc_ValueError, "Value must be an integer/boolean or a list/tuple of integers/booleans");
+       PyErr_SetString(PyExc_ValueError, "Значение должно быть целым числом/логином или списком/кортежом целых чисел/логических / Value must be an integer/boolean or a list/tuple of integers/booleans");
        return NULL;
    }
 
@@ -398,7 +398,7 @@ static PyObject *py_output_gpio(PyObject *self, PyObject *args)
    if (valuetuple)
        valuecount = PyTuple_Size(valuetuple);
    if ((chancount != -1 && chancount != valuecount && valuecount != -1) || (chancount == -1 && valuecount != -1)) {
-       PyErr_SetString(PyExc_RuntimeError, "Number of channels != number of values");
+       PyErr_SetString(PyExc_RuntimeError, "Количество каналов! = Количество значений / Number of channels != number of values");
        return NULL;
    }
 
@@ -430,7 +430,7 @@ static PyObject *py_output_gpio(PyObject *self, PyObject *args)
          if (PyErr_Occurred())
              return NULL;
       } else {
-          PyErr_SetString(PyExc_ValueError, "Channel must be an integer");
+          PyErr_SetString(PyExc_ValueError, "Канал должен быть целым числом / Channel must be an integer");
           return NULL;
       }
 
@@ -455,7 +455,7 @@ static PyObject *py_output_gpio(PyObject *self, PyObject *args)
              if (PyErr_Occurred())
                  return NULL;
           } else {
-              PyErr_SetString(PyExc_ValueError, "Value must be an integer or boolean");
+              PyErr_SetString(PyExc_ValueError, "Значение должно быть целым и логическим / Value must be an integer or boolean");
               return NULL;
           }
       }
@@ -482,7 +482,7 @@ static PyObject *py_input_gpio(PyObject *self, PyObject *args)
    // check channel is set up as an input or output
    if (gpio_direction[gpio] != INPUT && gpio_direction[gpio] != OUTPUT)
    {
-      PyErr_SetString(PyExc_RuntimeError, "You must setup() the GPIO channel first");
+      PyErr_SetString(PyExc_RuntimeError, "Сначала вы должны настроить канал GPIO через setup() / You must setup() the GPIO channel first");
       return NULL;
    }
 
@@ -612,7 +612,7 @@ static PyObject *py_cleanup(PyObject *self, PyObject *args, PyObject *kwargs)
       chancount = PyTuple_Size(chantuple);
    } else {
       // raise exception
-      PyErr_SetString(PyExc_ValueError, "Channel must be an integer or list/tuple of integers");
+      PyErr_SetString(PyExc_ValueError, "Канал должен быть целым числом или списком/кортежом целых чисел / Channel must be an integer or list/tuple of integers");
       return NULL;
    }
 
@@ -656,7 +656,7 @@ static PyObject *py_cleanup(PyObject *self, PyObject *args, PyObject *kwargs)
                if (PyErr_Occurred())
                   return NULL;
             } else {
-               PyErr_SetString(PyExc_ValueError, "Channel must be an integer");
+               PyErr_SetString(PyExc_ValueError, "Канал должен быть целым числом / Channel must be an integer");
                return NULL;
             }
 
@@ -669,7 +669,7 @@ static PyObject *py_cleanup(PyObject *self, PyObject *args, PyObject *kwargs)
 
    // check if any channels set up - if not warn about misuse of GPIO.cleanup()
    if (!found && gpio_warnings) {
-      PyErr_WarnEx(NULL, "No channels have been set up yet - nothing to clean up!  Try cleaning up at the end of your program instead!", 1);
+      PyErr_Warn(NULL, "Каналы пока не настроены - нечего очищать! Попробуйте выполнить очистку в конце программы! / No channels have been set up yet - nothing to clean up!  Try cleaning up at the end of your program instead!");
    }
 
    Py_RETURN_NONE;
@@ -741,7 +741,7 @@ static PyObject *py_add_event_callback(PyObject *self, PyObject *args, PyObject 
 
   if (!PyCallable_Check(cb_func))
   {
-    PyErr_SetString(PyExc_TypeError, "Parameter must be callable");
+    PyErr_SetString(PyExc_TypeError, "Параметр должен быть вызываемым / Parameter must be callable");
     return NULL;
   }
 
@@ -751,13 +751,13 @@ static PyObject *py_add_event_callback(PyObject *self, PyObject *args, PyObject 
   // check channel is set up as an input
   if (gpio_direction[gpio] != INPUT)
   {
-    PyErr_SetString(PyExc_RuntimeError, "You must setup() the GPIO channel as an input first");
+    PyErr_SetString(PyExc_RuntimeError, "Сначала вы должны настроить канал GPIO как input используя setup() / You must setup() the GPIO channel as an input first");
     return NULL;
   }
 
   if (!gpio_event_added(gpio))
   {
-    PyErr_SetString(PyExc_RuntimeError, "Add event detection using add_event_detect first before adding a callback");
+    PyErr_SetString(PyExc_RuntimeError, "Добавьте обнаружение событий, используя add_event_detect, прежде чем добавлять обратный вызов / Add event detection using add_event_detect first before adding a callback");
     return NULL;
   }
 
@@ -781,7 +781,7 @@ static PyObject *py_add_event_detect(PyObject *self, PyObject *args, PyObject *k
 
   if (cb_func != NULL && !PyCallable_Check(cb_func))
   {
-    PyErr_SetString(PyExc_TypeError, "Parameter must be callable");
+    PyErr_SetString(PyExc_TypeError, "Параметр должен быть вызываемым / Parameter must be callable");
     return NULL;
   }
 
@@ -791,14 +791,14 @@ static PyObject *py_add_event_detect(PyObject *self, PyObject *args, PyObject *k
   // check channel is set up as an input
   if (gpio_direction[gpio] != INPUT)
   {
-    PyErr_SetString(PyExc_RuntimeError, "You must setup() the GPIO channel as an input first");
+    PyErr_SetString(PyExc_RuntimeError, "Сначала вы должны настроить канал GPIO как input используя setup() / You must setup() the GPIO channel as an input first");
     return NULL;
   }
   // is edge valid value
   edge -= PY_EVENT_CONST_OFFSET;
   if (edge != RISING_EDGE && edge != FALLING_EDGE && edge != BOTH_EDGE)
   {
-    PyErr_SetString(PyExc_ValueError, "The edge must be set to RISING, FALLING or BOTH");
+    PyErr_SetString(PyExc_ValueError, "edge должен быть установлен как RISING, FALLING или BOTH / The edge must be set to RISING, FALLING or BOTH");
     return NULL;
   }
 
@@ -809,10 +809,10 @@ static PyObject *py_add_event_detect(PyObject *self, PyObject *args, PyObject *k
   {
     if (result == 1)
     {
-      PyErr_SetString(PyExc_RuntimeError, "Edge detection already enabled for this GPIO channel");
+      PyErr_SetString(PyExc_RuntimeError, "Обнаружение границ уже включено для этого канала GPIO / Edge detection already enabled for this GPIO channel");
       return NULL;
     } else {
-      PyErr_SetString(PyExc_RuntimeError, "Failed to add edge detection");
+      PyErr_SetString(PyExc_RuntimeError, "Не удалось добавить обнаружение границ / Failed to add edge detection");
       return NULL;
     }
   }
@@ -903,7 +903,7 @@ static PyObject *py_wait_for_edge(PyObject *self, PyObject *args, PyObject *kwar
    // check channel is setup as an input
    if (gpio_direction[gpio] != INPUT)
    {
-      PyErr_SetString(PyExc_RuntimeError, "You must setup() the GPIO channel as an input first");
+      PyErr_SetString(PyExc_RuntimeError, "Сначала вы должны настроить канал GPIO как input используя setup() / You must setup() the GPIO channel as an input first");
       return NULL;
    }
 
@@ -911,19 +911,19 @@ static PyObject *py_wait_for_edge(PyObject *self, PyObject *args, PyObject *kwar
    edge -= PY_EVENT_CONST_OFFSET;
    if (edge != RISING_EDGE && edge != FALLING_EDGE && edge != BOTH_EDGE)
    {
-      PyErr_SetString(PyExc_ValueError, "The edge must be set to RISING, FALLING or BOTH");
+      PyErr_SetString(PyExc_ValueError, "edge должен быть установлен как RISING, FALLING или BOTH / The edge must be set to RISING, FALLING or BOTH");
       return NULL;
    }
 
    if (bouncetime <= 0 && bouncetime != -666)
    {
-      PyErr_SetString(PyExc_ValueError, "Bouncetime must be greater than 0");
+      PyErr_SetString(PyExc_ValueError, "Bouncetime должно быть больше 0 / Bouncetime must be greater than 0");
       return NULL;
    }
 
    if (timeout <= 0 && timeout != -1)
    {
-      PyErr_SetString(PyExc_ValueError, "Timeout must be greater than 0");
+      PyErr_SetString(PyExc_ValueError, "Timeout должен быть больше 0 / Timeout must be greater than 0");
       return NULL;
    }
 
@@ -937,10 +937,10 @@ static PyObject *py_wait_for_edge(PyObject *self, PyObject *args, PyObject *kwar
    if (result == 0) {
       Py_RETURN_NONE;
    } else if (result == -1) {
-      PyErr_SetString(PyExc_RuntimeError, "Conflicting edge detection events already exist for this GPIO channel");
+      PyErr_SetString(PyExc_RuntimeError, "Конфликтные события обнаружения краев уже существуют для этого канала GPIO / Conflicting edge detection events already exist for this GPIO channel");
       return NULL;
    } else if (result == -2) {
-      PyErr_SetString(PyExc_RuntimeError, "Error waiting for edge");
+      PyErr_SetString(PyExc_RuntimeError, "Ошибка ожидания края / Error waiting for edge");
       return NULL;
    } else {
       return Py_BuildValue("i", channel);
@@ -948,25 +948,26 @@ static PyObject *py_wait_for_edge(PyObject *self, PyObject *args, PyObject *kwar
 
 }
 
-static const char moduledocstring[] = "GPIO functionality for Repka Pi boards using Python";
+static const char moduledocstring[] = "Функциональность GPIO для плат Repka Pi с использованием Python / GPIO functionality for Repka Pi boards using Python";
+
 
 PyMethodDef rpi_gpio_methods[] = {
-  {"setboard", py_setrpi, METH_VARARGS, "Set up Repka Pi board model to use."},
-  {"getboardmodel", py_getrpi, METH_VARARGS, "Get Repka Pi board model in use."},
-  {"setmode", py_setmode, METH_VARARGS, "Set up numbering mode to use for channels.\nBOARD - Use Repka Pi board numbers\nBCM   - Use Broadcom GPIO 00..nn numbers\nSOC   - Use SUNXI port numbers"},
-  {"getmode", py_getmode, METH_VARARGS, "Get numbering mode used for channel numbers.\nReturns BOARD, BCM, SOC or None"},
-  {"setwarnings", py_setwarnings, METH_VARARGS, "Enable or disable warning messages"},
-  {"setup", (PyCFunction)py_setup_channel, METH_VARARGS | METH_KEYWORDS, "Set up the GPIO channel, direction and (optional) pull/up down control\nchannel        - either board pin number or BCM number depending on which mode is set.\ndirection      - INPUT or OUTPUT\n[pull_up_down] - PUD_OFF (default), PUD_UP or PUD_DOWN\n[initial]      - Initial value for an output channel"},
-  {"cleanup", (PyCFunction)py_cleanup, METH_VARARGS | METH_KEYWORDS, "Clean up by resetting all GPIO channels that have been used by this program to INPUT with no pullup/pulldown and no event detection\n[channel] - individual channel to clean up.  Default - clean every channel that has been used."},
-  {"output", py_output_gpio, METH_VARARGS, "Output to a GPIO channel\nchannel - either board pin number or BCM number depending on which mode is set.\nvalue   - 0/1 or False/True or LOW/HIGH"},
-  {"input", py_input_gpio, METH_VARARGS, "Input from a GPIO channel.  Returns HIGH=1=True or LOW=0=False\nchannel - either board pin number or BCM number depending on which mode is set."},
-  {"gpio_function", py_gpio_function, METH_VARARGS, "Return the current GPIO function (IN, OUT, Multiplexing function ID)\nchannel - either board pin number or GPIO number depending on which mode is set."},
-  {"gpio_function_name", py_gpio_function_string, METH_VARARGS, "Return the current GPIO function (IN, OUT, Multiplexing function) as string\nchannel - either board pin number or GPIO number depending on which mode is set."},
-  {"add_event_detect", (PyCFunction)py_add_event_detect, METH_VARARGS | METH_KEYWORDS, "Enable edge detection events for a particular GPIO channel.\nchannel      - either board pin number or BCM number depending on which mode is set.\nedge         - RISING, FALLING or BOTH\n[callback]   - A callback function for the event (optional)\n[bouncetime] - Switch bounce timeout in ms for callback"},
-  {"remove_event_detect", py_remove_event_detect, METH_VARARGS, "Remove edge detection for a particular GPIO channel\nchannel - either board pin number or BCM number depending on which mode is set."},
-  {"event_detected", py_event_detected, METH_VARARGS, "Returns True if an edge has occured on a given GPIO.  You need to enable edge detection using add_event_detect() first.\nchannel - either board pin number or BCM number depending on which mode is set."},
-  {"add_event_callback", (PyCFunction)py_add_event_callback, METH_VARARGS | METH_KEYWORDS, "Add a callback for an event already defined using add_event_detect()\nchannel      - either board pin number or BCM number depending on which mode is set.\ncallback     - a callback function"},
-  {"wait_for_edge", (PyCFunction)py_wait_for_edge, METH_VARARGS | METH_KEYWORDS, "Wait for an edge.  Returns the channel number or None on timeout.\nchannel      - either board pin number or BCM number depending on which mode is set.\nedge         - RISING, FALLING or BOTH\n[bouncetime] - time allowed between calls to allow for switchbounce\n[timeout]    - timeout in ms"},
+  {"setboard", py_setrpi, METH_VARARGS, "Установка модели платы Repka Pi для использования\n-----------\nSet up Repka Pi board model to use."},
+  {"getboardmodel", py_getrpi, METH_VARARGS, "Получить используемую модель платы Repka Pi\n-----------\nGet Repka Pi board model in use."},
+  {"setmode", py_setmode, METH_VARARGS, "Настройте режим нумерации для каналов.\nBOARD — используйте номера плат Repka Pi\nBCM — используйте номера Broadcom GPIO 00..nn\nSOC — используйте номера портов SUNXI\n-----------\nSet up numbering mode to use for channels.\nBOARD - Use Repka Pi board numbers\nBCM   - Use Broadcom GPIO 00..nn numbers\nSOC   - Use SUNXI port numbers"},
+  {"getmode", py_getmode, METH_VARARGS, "Получить режим нумерации, используемый для номеров каналов.\nВозвращает BOARD, BCM, SOC или None.\n-----------\nGet numbering mode used for channel numbers.\nReturns BOARD, BCM, SOC or None"},
+  {"setwarnings", py_setwarnings, METH_VARARGS, "Включить или отключить предупреждающие сообщения\n-----------\nEnable or disable warning messages"},
+  {"setup", (PyCFunction)py_setup_channel, METH_VARARGS | METH_KEYWORDS, "Настройка канала GPIO, направление и (опционально) управление напряжением/вверх-вниз\nканал — либо номер контакта платы, либо номер SOC в зависимости от того, какой режим установлен.\nнаправление — ВХОД или ВЫХОД\n[pull_up_down] — PUD_OFF (по умолчанию), PUD_UP или PUD_DOWN\n[initial] — начальное значение выходного канала.\n-----------\nSet up the GPIO channel, direction and (optional) pull/up down control\nchannel        - either board pin number or SOC number depending on which mode is set.\ndirection      - INPUT or OUTPUT\n[pull_up_down] - PUD_OFF (default), PUD_UP or PUD_DOWN\n[initial]      - Initial value for an output channel"},
+  {"cleanup", (PyCFunction)py_cleanup, METH_VARARGS | METH_KEYWORDS, "Очистка путем сброса всех каналов GPIO, которые использовались этой программой, на вход INPUT без подтягивания/понижения и без обнаружения событий.\n[канал] — отдельный канал для очистки. По умолчанию — очистить каждый использованный канал.\n-----------\nClean up by resetting all GPIO channels that have been used by this program to INPUT with no pullup/pulldown and no event detection\n[channel] - individual channel to clean up.  Default - clean every channel that has been used."},
+  {"output", py_output_gpio, METH_VARARGS, "Вывод на канал GPIO\nканал — либо номер контакта платы, либо номер SOC в зависимости от того, какой режим установлен.\nзначение — 0/1 или False/True или LOW/HIGH.\n-----------\nOutput to a GPIO channel\nchannel - either board pin number or SOC number depending on which mode is set.\nvalue   - 0/1 or False/True or LOW/HIGH"},
+  {"input", py_input_gpio, METH_VARARGS, "Ввод из канала GPIO. Возвращает HIGH=1=True или LOW=0=False\nchannel — либо номер контакта платы, либо номер SOC, в зависимости от того, какой режим установлен.\n-----------\nInput from a GPIO channel.  Returns HIGH=1=True or LOW=0=False\nchannel - either board pin number or SOC number depending on which mode is set."},
+  {"gpio_function", py_gpio_function, METH_VARARGS, "Возвращает текущую функцию GPIO (IN, OUT, идентификатор функции мультиплексирования)\nchannel — либо номер контакта платы, либо номер GPIO в зависимости от того, какой режим установлен.\n-----------\nReturn the current GPIO function (IN, OUT, Multiplexing function ID)\nchannel - either board pin number or GPIO number depending on which mode is set."},
+  {"gpio_function_name", py_gpio_function_string, METH_VARARGS, "Возвращает текущую функцию GPIO (IN, OUT, функция мультиплексирования) в виде строки\nchannel — либо номера контакта платы, либо номера GPIO, в зависимости от того, какой режим установлен.\n-----------\nReturn the current GPIO function (IN, OUT, Multiplexing function) as string\nchannel - either board pin number or GPIO number depending on which mode is set."},
+  {"add_event_detect", (PyCFunction)py_add_event_detect, METH_VARARGS | METH_KEYWORDS, "Включите события обнаружения краев для конкретного канала GPIO. \nchannel - либо номер PIN -кода, либо номер BCM, в зависимости от того, какой режим установлен. \nedge - RISING, PALLE или оба \n [обратный вызов] - функция обратного вызова для события (необязательно) \n [bouncetime] - переключение тайм -аут отскока в MS для обратного вызова\n-----------\nEnable edge detection events for a particular GPIO channel.\nchannel      - either board pin number or BCM number depending on which mode is set.\nedge         - RISING, FALLING or BOTH\n[callback]   - A callback function for the event (optional)\n[bouncetime] - Switch bounce timeout in ms for callback"},
+  {"remove_event_detect", py_remove_event_detect, METH_VARARGS, "Удалить обнаружение фронта для определенного канала GPIO\nканала — либо номера контакта платы, либо номера SOC, в зависимости от того, какой режим установлен.\n-----------\nRemove edge detection for a particular GPIO channel\nchannel - either board pin number or SOC number depending on which mode is set."},
+  {"event_detected", py_event_detected, METH_VARARGS, "Возвращает значение True, если на данном GPIO произошел перепад. Сначала вам необходимо включить обнаружение границ с помощью add_event_detect().\nchannel — либо номер контакта платы, либо номер SOC, в зависимости от того, какой режим установлен.\n-----------\nReturns True if an edge has occured on a given GPIO.  You need to enable edge detection using add_event_detect() first.\nchannel - either board pin number or SOC number depending on which mode is set."},
+  {"add_event_callback", (PyCFunction)py_add_event_callback, METH_VARARGS | METH_KEYWORDS, "Добавьте обратный вызов для события, уже определенного с помощью add_event_detect()\nchannel — либо номер контакта платы, либо номер SOC, в зависимости от того, какой режим установлен.\ncallback — функция обратного вызова\n-----------\nAdd a callback for an event already defined using add_event_detect()\nchannel      - either board pin number or SOC number depending on which mode is set.\ncallback     - a callback function"},
+  {"wait_for_edge", py_wait_for_edge, METH_VARARGS, "Дождитесь фронта.\nchannel — либо номер контакта платы, либо номер SOC в зависимости от того, какой режим установлен.\nedge — RISING, FALLING или BOTH\n-----------\nWait for an edge.\nchannel - either board pin number or SOC number depending on which mode is set.\nedge    - RISING, FALLING or BOTH"},
   {NULL, NULL, 0, NULL}
 };
 

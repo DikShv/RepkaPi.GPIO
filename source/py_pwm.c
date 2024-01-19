@@ -51,15 +51,15 @@ static int PWM_init(PWMObject *self, PyObject *args, PyObject *kwds)
     printf("pwm_init channel = %d self->gpio = %d\n", channel, self->gpio);
 
   // ensure channel set as output
-  if (gpio_direction[self->gpio] != OUTPUT)
+   if (gpio_direction[self->gpio] != OUTPUT)
   {
-    PyErr_SetString(PyExc_RuntimeError, "You must setup() the GPIO channel as an output first");
+    PyErr_SetString(PyExc_RuntimeError, "Сначала вы должны настроить канал GPIO в качестве выхода через setup() / You must setup() the GPIO channel as an output first");
     return -1;
   }
 
   if (frequency <= 0.0)
   {
-    PyErr_SetString(PyExc_ValueError, "frequency must be greater than 0.0");
+    PyErr_SetString(PyExc_ValueError, "частота должна быть больше 0.0 / frequency must be greater than 0.0");
     return -1;
   }
 
@@ -79,7 +79,7 @@ static PyObject *PWM_start(PWMObject *self, PyObject *args)
 
   if (dutycycle < 0.0 || dutycycle > 100.0)
   {
-    PyErr_SetString(PyExc_ValueError, "dutycycle must have a value from 0.0 to 100.0");
+    PyErr_SetString(PyExc_ValueError, "Рабочий цикл (dutycycle) должен иметь значение от 0.0 до 100.0 / dutycycle must have a value from 0.0 to 100.0");
     return NULL;
   }
   self->dutycycle = dutycycle;
@@ -97,7 +97,7 @@ static PyObject *PWM_ChangeDutyCycle(PWMObject *self, PyObject *args)
 
   if (dutycycle < 0.0 || dutycycle > 100.0)
   {
-    PyErr_SetString(PyExc_ValueError, "dutycycle must have a value from 0.0 to 100.0");
+    PyErr_SetString(PyExc_ValueError, "Рабочий цикл (dutycycle) должен иметь значение от 0.0 до 100.0 / dutycycle must have a value from 0.0 to 100.0");
     return NULL;
   }
   self->dutycycle = dutycycle;
@@ -115,7 +115,7 @@ static PyObject *PWM_ChangeFrequency(PWMObject *self, PyObject *args)
 
   if (frequency <= 0.0)
   {
-    PyErr_SetString(PyExc_ValueError, "frequency must be greater than 0.0");
+    PyErr_SetString(PyExc_ValueError, "частота должна быть больше 0.0 / frequency must be greater than 0.0");
     return NULL;
   }
   self->freq = frequency;
@@ -139,10 +139,10 @@ static void PWM_dealloc(PWMObject *self)
 
 static PyMethodDef
 PWM_methods[] = {
-  { "start", (PyCFunction)PWM_start, METH_VARARGS, "Start software PWM\ndutycycle - the duty cycle (0.0 to 100.0)" },
-  { "ChangeDutyCycle", (PyCFunction)PWM_ChangeDutyCycle, METH_VARARGS, "Change the duty cycle\ndutycycle - between 0.0 and 100.0" },
-  { "ChangeFrequency", (PyCFunction)PWM_ChangeFrequency, METH_VARARGS, "Change the frequency\nfrequency - frequency in Hz (freq > 1.0)" },
-  { "stop", (PyCFunction)PWM_stop, METH_VARARGS, "Stop software PWM" },
+  { "start", (PyCFunction)PWM_start, METH_VARARGS, "Запустить программный ШИМ(PWM)\ndutycycle — рабочий цикл (от 0.0 до 100.0)\n-----------\nStart software PWM\ndutycycle - the duty cycle (0.0 to 100.0)" },
+  { "ChangeDutyCycle", (PyCFunction)PWM_ChangeDutyCycle, METH_VARARGS, "Изменить рабочий цикл\ndutycycle — от 0.0 до 100.0.\n-----------\nChange the duty cycle\ndutycycle - between 0.0 and 100.0" },
+  { "ChangeFrequency", (PyCFunction)PWM_ChangeFrequency, METH_VARARGS, "Изменить частоту\nfrequency - частота в Гц (частота > 1.0)\n-----------\nChange the frequency\nfrequency - frequency in Hz (freq > 1.0)" },
+  { "stop", (PyCFunction)PWM_stop, METH_VARARGS, "Остановить программный ШИМ(PWM)\n-----------\nStop software PWM" },
   { NULL }
 };
 
@@ -167,7 +167,7 @@ PyTypeObject PWMType = {
   0,                         // tp_setattro
   0,                         // tp_as_buffer
   Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, // tp_flag
-  "Pulse Width Modulation class",    // tp_doc
+  "Класс широтно-импульсной модуляции / Pulse Width Modulation class",    // tp_doc
   0,                         // tp_traverse
   0,                         // tp_clear
   0,                         // tp_richcompare

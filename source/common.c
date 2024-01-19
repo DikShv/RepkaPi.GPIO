@@ -55,7 +55,7 @@ int get_gpio_number(int channel, unsigned int *gpio)
 	if ( (gpio_mode == BCM && (channel < 0 || channel > 27))
 	|| (gpio_mode == BOARD && (channel < 1 || channel > 40)) )
 	{
-		PyErr_SetString(PyExc_ValueError, "The channel sent is invalid");
+		PyErr_SetString(PyExc_ValueError, "Не верно задан канал / The channel sent is invalid");
 		return 4;
 	}
   // Mode BCM
@@ -75,7 +75,7 @@ int get_gpio_number(int channel, unsigned int *gpio)
 	{
     if (*(*pin_to_gpio + channel) == -1)
 		{
-			PyErr_SetString(PyExc_ValueError, "The channel sent is invalid");
+			PyErr_SetString(PyExc_ValueError, "Не верно задан канал / The channel sent is invalid");
 			return 5;
 		}
 		else
@@ -88,7 +88,7 @@ int get_gpio_number(int channel, unsigned int *gpio)
   {
     if (!is_valid_raw_port(channel))
     {
-      PyErr_SetString(PyExc_ValueError, "The channel sent does not exist");
+      PyErr_SetString(PyExc_ValueError, "Указанный канал не существует / The channel sent does not exist");
       return 5;
     }
     *gpio = channel;
@@ -96,7 +96,7 @@ int get_gpio_number(int channel, unsigned int *gpio)
 	else
 	{
 		// setmode() has not been run
-		PyErr_SetString(PyExc_RuntimeError, "Please set pin numbering mode using GPIO.setmode(GPIO.BOARD) or GPIO.setmode(GPIO.BCM) or GPIO.setmode(GPIO.SOC)");
+		PyErr_SetString(PyExc_RuntimeError, "Пожалуйста, установите режим нумерации контактов, используя GPIO.setmode(GPIO.BOARD) или GPIO.setmode(GPIO.BCM), или GPIO.setmode(GPIO.SOC) / Please set pin numbering mode using GPIO.setmode(GPIO.BOARD) or GPIO.setmode(GPIO.BCM) or GPIO.setmode(GPIO.SOC)");
 		return 3;
 	}
 
@@ -111,14 +111,15 @@ int check_gpio_priv(void)
 	// check module has been imported cleanly
 	if (setup_error)
 	{
-		PyErr_SetString(PyExc_RuntimeError, "Module not imported correctly!");
+		PyErr_SetString(PyExc_RuntimeError, "Модуль импортирован неправильно! / Module not imported correctly!");
 		return 1;
 	}
 	// check mmap setup has worked
 	if (!module_setup)
 	{
-		PyErr_SetString(PyExc_RuntimeError, "No access to /dev/mem.  Try running as root!");
+		PyErr_SetString(PyExc_RuntimeError, "Нет доступа к /dev/mem. Попробуйте запустить под root! / No access to /dev/mem.  Try running as root!");
 		return 2;
 	}
 	return 0;
 }
+
